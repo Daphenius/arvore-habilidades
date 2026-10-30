@@ -4,9 +4,21 @@
 
 ![Árvore da Mesa no Foundry VTT](<arvore-da-mesa-repositorio-v1.7.3/docs/Arvore de Habilidades Completa.png>)
 
+Árvore de Habilidades
+
 Árvores de habilidades visuais para o Foundry VTT. O mestre monta as árvores num mapa, define o que cada habilidade custa e exige, e os jogadores compram com Pontos de Habilidade, XP, Ouro ou recursos criados pelo próprio mestre. O que é comprado entra na ficha do personagem como talentos com botão de uso, efeitos e itens, e sai da ficha quando é reembolsado.
 
 O módulo não vem com árvores prontas: você cria as suas ou importa arquivos JSON.
+
+O lado bom de importar é que você pode pedir para a sua IA analisar o código do módulo e montar uma árvore inteira para você em JSON. Ou, se preferir, pode se aventurar e criar a sua árvore do zero direto no mapa. Também é muito divertido.
+
+Sobre como este módulo foi feito
+
+Sei que parte da comunidade não gosta de módulos produzidos com IA, então prefiro ser transparente: este foi desenvolvido com ajuda de IA. Não sou programador.
+
+Tudo começou quando um amigo me disse: “cara, ficou muito mais simples, é só fazer uma macro do que você quer”. Fiz a macro para a minha mesa, fui adaptando conforme a necessidade dos jogos e, no fim, ela virou um módulo. Uso nas minhas próprias sessões e resolvi compartilhar caso seja útil para mais alguém.
+
+Se encontrar bugs ou tiver sugestões, abra uma issue. Todo retorno é bem-vindo.
 
 ---
 
