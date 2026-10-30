@@ -1,0 +1,36 @@
+# Ao publicar uma release no GitHub, monta o ZIP do módulo e anexa
+# arvore-habilidades.zip e module.json nela (é o que o Foundry baixa).
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Conferir a versão
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          VER=$(jq -r .version module.json)
+          if [ "$TAG" != "$VER" ]; then
+            echo "A tag (${GITHUB_REF_NAME}) não bate com a versão do module.json (${VER})."
+            exit 1
+          fi
+          grep -q "releases/download/v${VER}/arvore-habilidades.zip" module.json || { echo "O link de download do module.json não aponta para v${VER}."; exit 1; }
+
+      - name: Montar o ZIP (module.json na raiz)
+        run: zip -r arvore-habilidades.zip module.json scripts styles lang docs README.md CHANGELOG.md LICENSE
+
+      - name: Anexar na release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            arvore-habilidades.zip
+            module.json

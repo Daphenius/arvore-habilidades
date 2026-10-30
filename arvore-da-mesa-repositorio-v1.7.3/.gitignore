@@ -1,0 +1,5 @@
+# pastas e arquivos locais
+arvores-individuais/
+*.zip
+.DS_Store
+Thumbs.db
