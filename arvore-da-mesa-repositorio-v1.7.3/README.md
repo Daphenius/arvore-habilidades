@@ -2,8 +2,7 @@
 
 **Versão 1.7.3** · Foundry VTT 14 · D&D 5e 6 · Português e English · Licença MIT · ✅ Testado e aprovado no Foundry
 
-![arvore-da-mesa-repositorio-v1.7.3] (/docs/Arvore de Habilidades Completa.png)
-
+[![arvore-da-mesa-repositorio-v1.7.3] (/docs/Arvore de Habilidades Completa.png)]
 Árvores de habilidades visuais para o Foundry VTT. O mestre monta as árvores num mapa, define o que cada habilidade custa e exige, e os jogadores compram com Pontos de Habilidade, XP, Ouro ou recursos criados pelo próprio mestre. O que é comprado entra na ficha do personagem como talentos com botão de uso, efeitos e itens, e sai da ficha quando é reembolsado.
 
 O módulo não vem com árvores prontas: você cria as suas ou importa arquivos JSON.
