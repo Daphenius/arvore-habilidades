@@ -6,15 +6,22 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 let LANG = null;
+// O idioma do usuário só é conhecido no "i18nInit". Antes disso, game.i18n.lang é o idioma
+// padrão do servidor (Configuração do Foundry), que pode ser outro: se ele fosse guardado
+// cedo, a Árvore ficava em português com o Foundry do jogador em inglês.
+let READY = false;
+export function i18nReady() { READY = true; LANG = null; CACHE.clear(); }
+globalThis.Hooks?.once?.("i18nInit", i18nReady);
 // "pt" ou "en". Enquanto o Foundry não informa o idioma, fica em português.
 export function isEnglish() {
   if (LANG) return LANG === "en";
+  if (!READY) return false;
   const l = globalThis.game?.i18n?.lang;
   if (!l) return false;
   LANG = String(l).toLowerCase().startsWith("pt") ? "pt" : "en";
   return LANG === "en";
 }
-export const setLang = l => { LANG = l ? (String(l).toLowerCase().startsWith("pt") ? "pt" : "en") : null; CACHE.clear(); };
+export const setLang = l => { LANG = l ? (String(l).toLowerCase().startsWith("pt") ? "pt" : "en") : null; READY = true; CACHE.clear(); };
 
 // começo de trecho que ainda é o fim de uma tag: `">`, `" class="on">`, `>`
 function leadTag(part) {

@@ -3,7 +3,7 @@
 //  Módulo Foundry VTT V14, sistema dnd5e 6
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { L } from "./i18n.js?v=1.7.7";
+import { L } from "./i18n.js?v=1.7.8";
 import {
   ABILITIES, ACTIVATIONS, ApplicationV2, CFG, CHANGE_TYPES, DAMAGE_TYPES, DEFAULT_TYPE, DRAW_COLORS, DUR_UNITS,
   DialogV2 as DialogBase, FEAT_KINDS, FILTERS, FP, KEY_HINTS, K_FEATS, K_LOG, K_MILES, K_MYTH, K_RANKS, K_REQ,
@@ -18,25 +18,25 @@ import {
   setData, skillAvail, skillEarned, stFlag, systemType, topoNodes, trainingOf, treeHasMythic, uid, unlockedOf,
   whisperOwners, withRank, wouldCycle,
   K_TEMP, tempsOf, tempOf, tempText, grantTemp, endTemp, today, dateText, calApi, syncShared, sharedCopies
-} from "./core.js?v=1.7.7";
-import { SaveQueue } from "./persistence.js?v=1.7.7";
-import { validateTrees, remapTree } from "./validation.js?v=1.7.7";
-import { actorOperation } from "./operations.js?v=1.7.7";
-import { DialogV2, charCard, whoSub, whoTools, wireWho } from "./ui-kit.js?v=1.7.7";
-import { MixCanvas } from "./app-canvas.js?v=1.7.7";
-import { MixPanel } from "./app-panel.js?v=1.7.7";
-import { MixEditor } from "./app-editor.js?v=1.7.7";
-import { MixDialogs } from "./app-dialogs.js?v=1.7.7";
-import { MixIo } from "./app-io.js?v=1.7.7";
-import { MixActions } from "./app-actions.js?v=1.7.7";
-import { MixUndo } from "./app-undo.js?v=1.7.7";
-import { MixTools } from "./app-tools.js?v=1.7.7";
-import { MixWelcome } from "./app-welcome.js?v=1.7.7";
+} from "./core.js?v=1.7.8";
+import { SaveQueue } from "./persistence.js?v=1.7.8";
+import { validateTrees, remapTree } from "./validation.js?v=1.7.8";
+import { actorOperation } from "./operations.js?v=1.7.8";
+import { DialogV2, charCard, whoSub, whoTools, wireWho } from "./ui-kit.js?v=1.7.8";
+import { MixCanvas } from "./app-canvas.js?v=1.7.8";
+import { MixPanel } from "./app-panel.js?v=1.7.8";
+import { MixEditor } from "./app-editor.js?v=1.7.8";
+import { MixDialogs } from "./app-dialogs.js?v=1.7.8";
+import { MixIo } from "./app-io.js?v=1.7.8";
+import { MixActions } from "./app-actions.js?v=1.7.8";
+import { MixUndo } from "./app-undo.js?v=1.7.8";
+import { MixTools } from "./app-tools.js?v=1.7.8";
+import { MixWelcome } from "./app-welcome.js?v=1.7.8";
 
 
 
 // ───────────────────────── Aplicação ─────────────────────────
-export const APP_VERSION = "1.7.7";
+export const APP_VERSION = "1.7.8";
 
 export class ArvoreHabilidades extends ApplicationV2 {
   static DEFAULT_OPTIONS = {
@@ -127,6 +127,8 @@ export class ArvoreHabilidades extends ApplicationV2 {
   sections() {
     const saved = getData("sections", { list: [{ id: "fantasy", name: L("Fantasia") }] }).list;
     const list = Array.isArray(saved) ? clone(saved) : [{ id: "fantasy", name: L("Fantasia") }];
+    // nome padrão da primeira seção segue o idioma (se o mestre não o renomeou)
+    for (const c of list) if (c?.id === "fantasy" && ["Fantasia", "Fantasy"].includes(c.name)) c.name = L("Fantasia");
     for (const t of this.trees) {
       const id = catOf(t);
       if (!list.some(c => c.id === id)) list.push({ id, name: this._goneSections?.[id] ?? (id === "sequences" ? L("Sequências") : id === "fantasy" ? L("Fantasia") : L("Seção importada")) });

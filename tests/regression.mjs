@@ -422,4 +422,12 @@ await test('long rest done by a player on the sheet is counted by the GM (also a
  await core.processAllRestQueues();
  game.users=users;game.actors.length=0;game.settings.get=()=>undefined;core.invalidateTrees();
 });
+await test('language follows the user setting, not the server default read before i18nInit',async()=>{
+ const old=game.i18n.lang;game.i18n.lang='pt-BR';
+ const i=await import(`../scripts/i18n.js?fresh=${Date.now()}`);
+ assert.equal(i.L('Fantasia'),'Fantasia','before i18nInit stays in Portuguese');
+ game.i18n.lang='en';i.i18nReady();
+ assert.equal(i.isEnglish(),true);assert.equal(i.L('Fantasia'),'Fantasy');
+ game.i18n.lang=old;
+});
 console.log(`TOTAL: ${count} passed`);

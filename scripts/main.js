@@ -3,10 +3,10 @@
 //  Módulo Foundry VTT V14, sistema dnd5e 6
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { L, relabel } from "./i18n.js?v=1.7.7";
-import * as CORE from "./core.js?v=1.7.7";
-import { MOD, VERSION, ST, initCore, registerSettings, installSessionHooks, migrateFromMacro, migrateEffectKeys, getTrees, getData, setData, registerTidyTab, fixOrphans, isActiveGM, processAllRestQueues, migrateRefundPlayer, applyTheme } from "./core.js?v=1.7.7";
-import { ArvoreHabilidades, APP_VERSION } from "./app.js?v=1.7.7";
+import { L, relabel, i18nReady } from "./i18n.js?v=1.7.8";
+import * as CORE from "./core.js?v=1.7.8";
+import { MOD, VERSION, ST, initCore, registerSettings, installSessionHooks, migrateFromMacro, migrateEffectKeys, getTrees, getData, setData, registerTidyTab, fixOrphans, isActiveGM, processAllRestQueues, migrateRefundPlayer, applyTheme } from "./core.js?v=1.7.8";
+import { ArvoreHabilidades, APP_VERSION } from "./app.js?v=1.7.8";
 
 // Abre a janela ou traz para frente se já estiver aberta
 function openApp() {
@@ -81,7 +81,7 @@ Hooks.once("init", () => {
 });
 
 // listas de opções montadas na importação: traduz quando o idioma do Foundry é conhecido
-Hooks.once("i18nInit", () => relabel(Object.values(CORE)));
+Hooks.once("i18nInit", () => { i18nReady(); relabel(Object.values(CORE)); });
 
 Hooks.once("setup", () => initCore());
 

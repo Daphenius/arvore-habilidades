@@ -1,5 +1,5 @@
-import { L, isEnglish } from "./i18n.js?v=1.7.7";
-import { actorOperation } from "./operations.js?v=1.7.7";
+import { L, isEnglish } from "./i18n.js?v=1.7.8";
+import { actorOperation } from "./operations.js?v=1.7.8";
 const INTERNAL = Symbol("skill-tree-operation");
 // ═══════════════════════════════════════════════════════════════════════════
 //  Árvore da Mesa — núcleo: dados, regras, ficha e automações
@@ -9,7 +9,7 @@ const INTERNAL = Symbol("skill-tree-operation");
 // Os dados dos personagens ficam em flags.{SCOPE} ("world") — o mesmo da macro antiga,
 // para manter todo o progresso já existente.
 export const MOD = "arvore-habilidades";
-export const VERSION = "1.7.7"; // tem que bater com o module.json
+export const VERSION = "1.7.8"; // tem que bater com o module.json
 // Registro compartilhado entre os arquivos (janela aberta, área de transferência…)
 export const ST = { app: null, open: null, openApp: null, session: null, catalog: null, clipboard: null, synBusy: false, tidy: false };
 
@@ -271,7 +271,7 @@ export const playerSees = (t, a) => !!a && canSee(t, a.id) && !(t.lockHide && tr
 export function normalizeNode(n) {
   const nn = { ...nodeDefaults(), ...n };
   for (const k of ["items", "changes", "features", "consume", "reqClasses", "reqItems", "rankDescs", "reqNodes"]) nn[k] = Array.isArray(nn[k]) ? nn[k] : [];
-  // 1.7.7: poções e digestão saíram do módulo
+  // 1.7.8: poções e digestão saíram do módulo
   for (const k of ["seq", "digestReq", "potionDC", "sanLoss", "ingredients"]) delete nn[k];
   nn.extra = nn.extra && typeof nn.extra === "object" && !Array.isArray(nn.extra) ? Object.fromEntries(Object.entries(nn.extra).map(([k, v]) => [k, Math.max(0, Number(v) || 0)])) : {};
   // versão antiga: uma única habilidade na ficha
@@ -294,7 +294,7 @@ export function normalizeTree(t) {
   // 1.3.1: "Peças de Ouro" virou "Ouro", que também aceita Platina (mesma escala em PO)
   if (t.resPath === "system.currency.gp") t.resPath = COINS;
   Object.assign(t, { ...treeDefaults(), ...t });
-  // 1.7.7: árvores do antigo modo Sequências (poções e digestão) viram árvores de pontos comuns
+  // 1.7.8: árvores do antigo modo Sequências (poções e digestão) viram árvores de pontos comuns
   if (t.mode === "sequence") {
     if (!t.section) t.section = "sequences";
     t.mode = "skill"; t.rules = "custom";

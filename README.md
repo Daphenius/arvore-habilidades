@@ -1,6 +1,6 @@
 # Árvore da Mesa
 
-**Versão 1.7.7** · Foundry VTT 14 · D&D 5e 6 · Português e English · Licença MIT · ✅ Testado no Foundry VTT e D&D 5e
+**Versão 1.7.8** · Foundry VTT 14 · D&D 5e 6 · Português e English · Licença MIT · ✅ Testado no Foundry VTT e D&D 5e
 
 ![Árvore da Mesa no Foundry VTT](<docs/Arvore de Habilidades Completa.png>)
 
@@ -332,7 +332,7 @@ O progresso de cada personagem fica em `flags.world` do ator (`skillTree`, `skil
 
 Cada versão é **testada pelo autor no Foundry VTT 14 com o sistema D&D 5e 6** logo depois de atualizada.
 
-Além disso, o módulo tem 50 testes automatizados que simulam o Foundry (compras, reembolsos, treino, temporárias, desfazer, importação, limpeza das fichas, tradução e mais). Como em qualquer módulo, recomendamos fazer backup do mundo antes de atualizar. Para rodar os testes com Node.js 22 ou posterior, na pasta que contém `arvore-habilidades`:
+Além disso, o módulo tem 51 testes automatizados que simulam o Foundry (compras, reembolsos, treino, temporárias, desfazer, importação, limpeza das fichas, tradução e mais). Como em qualquer módulo, recomendamos fazer backup do mundo antes de atualizar. Para rodar os testes com Node.js 22 ou posterior, na pasta que contém `arvore-habilidades`:
 
 ```sh
 node arvore-habilidades/tests/regression.mjs

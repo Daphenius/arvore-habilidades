@@ -2,9 +2,9 @@
 //  Árvore da Mesa — Validador e Estatísticas da Skill Tree
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { L, isEnglish } from "./i18n.js?v=1.7.7";
-import { CFG, R, esc, isMythic, isSkill, nodeById, parentsOf, rOf, topoNodes, treesOpenedBy, findFeat, extraRes, coinsOn, labelsOf, today, dateText, sharedCopies } from "./core.js?v=1.7.7";
-import { DialogV2 } from "./ui-kit.js?v=1.7.7";
+import { L, isEnglish } from "./i18n.js?v=1.7.8";
+import { CFG, R, esc, isMythic, isSkill, nodeById, parentsOf, rOf, topoNodes, treesOpenedBy, findFeat, extraRes, coinsOn, labelsOf, today, dateText, sharedCopies } from "./core.js?v=1.7.8";
+import { DialogV2 } from "./ui-kit.js?v=1.7.8";
 
 // ── problemas de uma árvore: { lvl: "error" | "warn" | "info", text, node? } ──
 export function treeProblems(t, trees) {

@@ -1,5 +1,10 @@
 # Histórico de versões — Árvore da Mesa
 
+## 1.7.8
+
+- **Idioma corrigido:** com o Foundry em inglês, a Árvore agora aparece em inglês. Antes, ela lia o idioma cedo demais, quando o Foundry ainda informava o idioma padrão do servidor (definido na tela de Configuração), e ficava em português mesmo com o usuário em inglês.
+- O nome padrão da primeira seção (Fantasia / Fantasy) segue o idioma, a menos que o mestre o tenha renomeado.
+
 ## 1.7.7
 
 - **Descanso longo feito pelo jogador na própria ficha agora conta** para o treino e para as habilidades temporárias. O D&D 5e só avisa o descanso no computador de quem descansou, então antes só funcionava quando o mestre fazia o descanso. Agora a ficha guarda o descanso e o computador do mestre conta na hora.
