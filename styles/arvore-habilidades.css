@@ -231,12 +231,12 @@
 .st-legend .st-card-t i{display:inline;width:auto;height:auto;border:none;border-radius:0}
 
 /* versão do CSS: o módulo confere ao carregar */
-:root{--st-css-version:"1.7.3"}
+:root{--st-css-version:"1.7.5"}
 
 /* Seções personalizadas podem ocupar mais de uma linha. */
 .st-catwrap .st-cats{flex-wrap:wrap;max-width:620px}
 
-/* ── 1.7.3: janelas de configuração (Skill Tree e Gerais) ── */
+/* ── 1.7.5: janelas de configuração (Skill Tree e Gerais) ── */
 .st-c{--c-gold:var(--st-accent);--c-bg:var(--st-input);--c-card:var(--st-card);--c-line:var(--st-line);--c-text:var(--st-text);--c-mute:var(--st-muted);color:var(--c-text);display:flex;flex-direction:column;gap:10px;max-height:70vh;overflow-y:auto;padding:2px 4px 2px 0}
 .st-c [hidden]{display:none !important}
 .st-c-tabs{display:flex;gap:4px;background:var(--c-bg);border:1px solid var(--c-line);border-radius:10px;padding:4px;position:sticky;top:0;z-index:1}
@@ -284,7 +284,7 @@
 .st-c-btn-danger:hover{background:#8a2a2a !important;border-color:var(--st-bad) !important}
 @media (max-width:520px){.st-c-two,.st-c-cards{grid-template-columns:1fr}}
 
-/* ── 1.7.3: Grandes Feitos por Skill Tree e árvores bloqueadas ── */
+/* ── 1.7.5: Grandes Feitos por Skill Tree e árvores bloqueadas ── */
 .st-lockban{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;background:color-mix(in srgb,var(--st-myth-bg) 93%,transparent);border:1px solid color-mix(in srgb,var(--st-myth) 53%,transparent);color:var(--st-myth-text);font-size:13px;box-shadow:0 4px 16px #0008;pointer-events:none;max-width:90%;text-align:center}
 .st-lockban i{color:var(--st-myth-text)}
 .st-feats .st-feat-row{display:flex;align-items:flex-start;gap:8px;padding:6px 4px;border-bottom:1px solid #ffffff12}
@@ -321,7 +321,7 @@
   --st-myth:#85609e;--st-myth-text:#664380;--st-myth-bg:#efe6f4;
 }
 
-/* ── 1.7.3: temas de cor suavizados (menos saturação, contraste confortável) ── */
+/* ── 1.7.5: temas de cor suavizados (menos saturação, contraste confortável) ── */
 :root{
   --st-bg:#16181d;--st-bg2:#1c1f25;--st-bg3:#1a1c22;--st-bg-deep:#121418;--st-view:#13151a;--st-panel:#191b21;
   --st-card:#20232a;--st-sec:#1d2026;--st-sec2:#23262d;--st-line:#2f333c;--st-border:#353128;--st-input:#15171c;--st-chip:#262a32;
@@ -380,7 +380,7 @@
 .st-root input[type=checkbox],.st-c input[type=checkbox]{accent-color:var(--st-accent)}
 .st-root .st-danger,.st-c .st-c-btn-danger{background:var(--st-bad-deep);color:#fff;border-color:var(--st-bad)}
 
-/* ── 1.7.3: editor de habilidades no estilo das configurações ── */
+/* ── 1.7.5: editor de habilidades no estilo das configurações ── */
 .st-root.edit .st-panel{width:400px;flex:0 0 400px}
 .st-panel{padding:12px 14px}
 .st-panel input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=range]),.st-panel select{min-height:32px;height:auto;border-radius:7px;padding:4px 9px;font-size:13px}
@@ -430,7 +430,7 @@
 .st-cfg-dialog .form-footer button,.st-cfg-dialog footer button{background:var(--st-card);color:var(--st-text);border:1px solid var(--st-line)}
 .st-cfg-dialog .form-footer button[data-action="ok"],.st-cfg-dialog footer button.default{background:var(--st-accent);color:var(--st-on-accent);border-color:var(--st-accent)}
 
-/* ── 1.7.3: interface moderna ── */
+/* ── 1.7.5: interface moderna ── */
 /* brilhos mais suaves (cansam menos a vista) */
 .st-unlocked{filter:drop-shadow(0 0 5px color-mix(in srgb,var(--c) 70%,transparent))}
 .st-training{filter:drop-shadow(0 0 4px var(--st-warn))}
@@ -539,7 +539,7 @@
 .st-tpl{cursor:default;border-width:1px}
 .st-tpl .st-who-t small{white-space:normal}
 
-/* ── 1.7.3: treino, temporárias, desfazer ── */
+/* ── 1.7.5: treino, temporárias, desfazer ── */
 .st-trow{display:flex;gap:8px;align-items:center;padding:6px;border-radius:10px;cursor:pointer}
 .st-trow:hover{background:var(--st-tint)}
 .st-trow img{width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid var(--st-warn)}
@@ -608,7 +608,7 @@
 .st-wel-dots{display:flex;gap:6px}
 .st-wel-dots i{width:8px;height:8px;border-radius:50%;background:var(--st-line);transition:background .2s,width .2s}
 .st-wel-dots i.on{background:var(--st-accent);width:20px;border-radius:4px}
-/* barra de desenho (1.7.3): horizontal, compacta, flutuando sobre o mapa */
+/* barra de desenho (1.7.5): horizontal, compacta, flutuando sobre o mapa */
 .st-tools{flex-direction:row !important;flex-wrap:wrap;width:auto !important;max-width:calc(100% - 16px);gap:6px !important;padding:5px !important;border-radius:12px !important;background:color-mix(in srgb,var(--st-bg2) 92%,transparent) !important;border:1px solid var(--st-line) !important;box-shadow:0 6px 18px #0006;backdrop-filter:blur(4px);align-items:center !important}
 .st-tgrp{display:flex;gap:3px;align-items:center;padding:2px;border-radius:9px;background:var(--st-tint)}
 .st-tgrp.dim{opacity:.55}
@@ -627,3 +627,8 @@
 .st-palcustom{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--st-muted);cursor:pointer}
 .st-palcustom input[type=color]{width:28px;height:24px;border:none;padding:0;background:none;cursor:pointer}
 .st-undo-row b{font-size:13px;font-weight:600}
+/* botão principal indisponível: mostra o motivo */
+.st-big small{font-weight:normal;opacity:.85;font-size:12px}
+.st-big-off,.st-big:disabled{background:var(--st-card) !important;color:var(--st-muted) !important;border:1px dashed var(--st-line) !important;cursor:not-allowed;opacity:1}
+.st-why{display:flex;gap:6px;align-items:flex-start;font-size:12px;color:var(--st-warn-text);margin:-2px 2px 4px;line-height:1.35}
+.st-why i{margin-top:2px}

@@ -1214,5 +1214,21 @@ export const EN = {
 "inteira?": "entirely?",
 "Agora mesmo, os personagens recebem de volta o que gastaram nela e tudo o que ela colocou nas fichas é removido. Ctrl+Z traz a árvore de volta, mas sem o progresso.": "Right now, characters get back what they spent on it and everything it put on their sheets is removed. Ctrl+Z brings the tree back, but without the progress.",
 "Agora mesmo, os personagens recebem de volta o que gastaram nelas e tudo o que elas colocaram nas fichas é removido.": "Right now, characters get back what they spent on them and everything they put on their sheets is removed.",
-"Pontos devolvidos e fichas limpas para": "Points returned and sheets cleaned for"
+"Pontos devolvidos e fichas limpas para": "Points returned and sheets cleaned for",
+"Passar 1 descanso longo (todos)": "Advance 1 long rest (everyone)",
+"Passar 1 descanso longo": "Advance 1 long rest",
+"Conta 1 descanso longo no treino e nas habilidades temporárias de todos os personagens": "Counts 1 long rest for the training and temporary abilities of every character",
+"Conta 1 descanso longo no treino e nas temporárias deste personagem (como um descanso longo pela ficha)": "Counts 1 long rest for this character's training and temporary abilities (like a long rest on the sheet)",
+"Ninguém está treinando nem tem habilidade temporária por descanso.": "Nobody is training or has a rest-based temporary ability.",
+"Descanso longo contado para": "Long rest counted for",
+"Descanso longo: treino e habilidades temporárias contados para": "Long rest: training and temporary abilities counted for",
+"Conta a cada descanso longo: pela ficha, pelo botão Descanso longo do Calendário da Mesa ou por “Passar 1 descanso longo”.": "Counts on each long rest: on the sheet, with the Calendário da Mesa Long rest button or with “Advance 1 long rest”.",
+"Já está pago. Cada descanso longo conta 1 (pela ficha, pelo Calendário da Mesa ou pelo mestre). Quando completar, a habilidade é liberada sozinha.": "Already paid. Each long rest counts 1 (on the sheet, with Calendário da Mesa or by the GM). When complete, the ability unlocks by itself.",
+"Treinar": "Train",
+"Treinar o nível": "Train level",
+"Pedir ao mestre para treinar": "Ask the GM to train",
+"Ainda não disponível": "Not available yet",
+"Treinar habilidade": "Train ability",
+"Clique em <b>Treinar</b>: o custo é pago agora.": "Click <b>Train</b>: the cost is paid now.",
+"Treinar</b>: o custo é pago agora.": "Train</b>: the cost is paid now."
 };

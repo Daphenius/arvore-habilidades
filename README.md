@@ -1,18 +1,18 @@
 # Árvore da Mesa
 
-**Versão 1.7.3** · Foundry VTT 14 · D&D 5e 6 · Português e English · Licença MIT · ✅ Testado e aprovado no Foundry
+**Versão 1.7.5** · Foundry VTT 14 · D&D 5e 6 · Português e English · Licença MIT · ✅ Testado e aprovado no Foundry (1.7.3)
 
-![Árvore da Mesa no Foundry VTT](<arvore-da-mesa-repositorio-v1.7.3/docs/Arvore de Habilidades Completa.png>)
+![Árvore da Mesa no Foundry VTT](<docs/Arvore de Habilidades Completa.png>)
 
 Árvore de Habilidades
 
 Árvores de habilidades visuais para o Foundry VTT. O mestre monta as árvores num mapa, define o que cada habilidade custa e exige, e os jogadores compram com Pontos de Habilidade, XP, Ouro ou recursos criados pelo próprio mestre. O que é comprado entra na ficha do personagem como talentos com botão de uso, efeitos e itens, e sai da ficha quando é reembolsado.
 
-O módulo não vem com árvores prontas: você cria as suas ou importa arquivos JSON.
+O módulo não vem com árvores prontas: você cria as suas ou importa arquivos JSON. A pasta [`Exemplo de Arvores`](<Exemplo de Arvores>) tem três árvores prontas para importar e servir de modelo.
 
 O lado bom de importar é que você pode pedir para a sua IA analisar o código do módulo e montar uma árvore inteira para você em JSON. Ou, se preferir, pode se aventurar e criar a sua árvore do zero direto no mapa. Também é muito divertido.
 
-Sobre como este módulo foi feito
+### Sobre como este módulo foi feito
 
 Sei que parte da comunidade não gosta de módulos produzidos com IA, então prefiro ser transparente: este foi desenvolvido com ajuda de IA. Não sou programador.
 
@@ -150,7 +150,8 @@ Use **Verificar** antes de liberar uma árvore para os jogadores: ele aponta hab
 
 - **Escolher personagem**: clique no seu nome na barra (se você tiver mais de um) ou selecione o token.
 - **Comprar**: clique numa habilidade. As que brilham em verde estão disponíveis; use **Desbloquear** no painel. Se a árvore exige aprovação, o botão vira **Pedir ao mestre**.
-- **Treino**: algumas habilidades mostram **Começar treino (N descansos)**. Você paga na hora e a habilidade fica pronta depois de N descansos longos feitos pela ficha. O painel mostra o progresso.
+- **Treino**: algumas habilidades mostram o botão **Treinar** com quantos descansos longos levam. Você paga na hora e a habilidade fica pronta depois desses descansos (pela ficha, pelo Calendário da Mesa ou pelo mestre). O painel mostra o progresso.
+- **Botão cinza**: quando ainda não dá para desbloquear ou treinar, o botão aparece cinza com o motivo embaixo (pontos insuficientes, requisito faltando…).
 - **Planejar**: monte um caminho clicando nas habilidades na ordem desejada e veja o custo antes de gastar.
 - **Reembolsar várias**: devolve habilidades, se o mestre permitir. Tudo o que elas colocaram na ficha é removido.
 - **Ficha**: a aba **Skill Tree** mostra pontos, progresso e habilidades de cada árvore.
@@ -222,7 +223,7 @@ Tudo o que uma árvore coloca na ficha leva uma marca. Ao reembolsar, o módulo 
 
 - **Mesa**: um cartão por personagem com pontos, pedidos, treino e o progresso em cada árvore, mais estes atalhos:
   - Recompensa em grupo;
-  - Passar 1 dia de treino;
+  - Passar 1 descanso longo (treino e temporárias de todos);
   - Aplicar Skill Tree em NPC;
   - Grande Feito;
   - Diário da sessão (texto pronto para o Discord);
@@ -272,7 +273,8 @@ Essas opções também aparecem em *Configurações do Jogo → Configurar Módu
 Com o módulo **Calendário da Mesa** (`calendario-mesa`) ativo:
 
 - as datas usam o calendário do mundo, com o nome do dia, do mês e o ano, e são escolhidas por ano, mês e dia;
-- habilidades temporárias e árvores ou habilidades liberadas por data são conferidas a cada dia novo do calendário.
+- habilidades temporárias e árvores ou habilidades liberadas por data são conferidas a cada dia novo do calendário;
+- o botão **Descanso longo** do relógio (Calendário 4.2.1 ou mais novo) conta como descanso longo para o treino e as habilidades temporárias de todos os personagens.
 
 Sem o Calendário da Mesa, o módulo conta os dias pelo tempo nativo do Foundry, com datas escolhidas em "dias a partir de hoje".
 
@@ -289,6 +291,8 @@ Ao importar uma árvore que já existe no mundo, você escolhe:
 
 - **Atualizar a existente**: mantém ID, seção, atribuições e progresso; as habilidades são associadas pelo ID e depois pelo nome.
 - **Criar outra cópia**: a cópia nova não tem ninguém atribuído; use **Atribuir** depois.
+
+Para começar, experimente importar um dos arquivos da pasta `Exemplo de Arvores` do repositório (Escolhido da Matrona dos Corvos, Escolhido do Coração Arcano e Guerreira do Poder).
 
 Pacotes com várias árvores mantêm os combos e bloqueios entre elas. O módulo confere o arquivo antes de importar e recusa os que passam de 20 MB ou trazem IDs inválidos, ligações em ciclo ou dados fora do formato esperado. Mesmo assim, faça um backup (**Gerais → Exportar todas**) antes de importar algo grande.
 
@@ -314,7 +318,7 @@ O progresso de cada personagem fica em `flags.world` do ator (`skillTree`, `skil
 - **Pontos não voltaram depois de excluir algo**: use **Mesa → Corrigir pontos**.
 - **Falha ao salvar**: a edição continua na janela e o fechamento é interrompido. Resolva a conexão e feche de novo. Se outra janela alterou as mesmas árvores, exporte suas edições antes de recarregar.
 - **Importar por link não funciona**: o site bloqueou o download direto. Baixe o arquivo e use *Importar → Arquivo*.
-- **Treino não avança**: ele conta descansos longos feitos pela ficha do D&D 5e. O mestre também pode usar *Passar 1 dia de treino* ou *Concluir treino agora*.
+- **Treino ou temporária não avança**: contam descansos longos feitos pela ficha do D&D 5e, pelo botão **Descanso longo** do Calendário da Mesa (4.2.1 ou mais novo) ou por **Passar 1 descanso longo** (no painel do personagem ou na Mesa, para todos). Avançar o relógio de outro jeito não conta como descanso. O mestre também pode usar *Concluir treino agora* ou *Remover agora*.
 
 ---
 
@@ -334,7 +338,7 @@ Além disso, o módulo tem 48 testes automatizados que simulam o Foundry (compra
 node arvore-habilidades/tests/regression.mjs
 ```
 
-Um dos testes confere os JSONs de exemplo e precisa da pasta `arvores-individuais` ao lado do módulo.
+Um dos testes confere os JSONs da pasta `Exemplo de Arvores`.
 
 ---
 
@@ -363,6 +367,8 @@ Um dos testes confere os JSONs de exemplo e precisa da pasta `arvores-individuai
 | `styles/arvore-habilidades.css` | visual e temas |
 | `CHANGELOG.md` | histórico de versões |
 | `LICENSE` | licença MIT |
+| `docs/` | capturas de tela |
+| `Exemplo de Arvores/` | árvores prontas em JSON para importar (ficam só no repositório, fora do ZIP) |
 | `.github/workflows/release.yml` | monta e anexa o ZIP e o `module.json` ao publicar uma release |
 
 ---

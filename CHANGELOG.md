@@ -1,5 +1,19 @@
 # Histórico de versões — Árvore da Mesa
 
+## 1.7.5
+
+- Botão **Treinar** para os jogadores: habilidades com treino mostram "Treinar — N descansos longos · custo". Com aprovação do mestre, "Pedir ao mestre para treinar".
+- O botão principal da habilidade (Treinar, Desbloquear, Subir de nível) aparece sempre; quando ainda não dá, fica cinza com o motivo embaixo (ex.: pontos insuficientes, falta um requisito).
+- Repositório reorganizado: arquivos do módulo na raiz (necessário para a release automática).
+- README unificado: capturas de tela reais, seção "Sobre como este módulo foi feito" e dica de pedir para a IA montar árvores em JSON.
+- Pasta **Exemplo de Arvores** no repositório com três árvores prontas para importar (Escolhido da Matrona dos Corvos, Escolhido do Coração Arcano e Guerreira do Poder). Ela fica fora do ZIP do módulo.
+
+## 1.7.4
+
+- **Descanso longo conta para as habilidades temporárias em todos os caminhos**: pela ficha (como antes), pelo botão **Descanso longo** do Calendário da Mesa (precisa do Calendário 4.2.1, que agora avisa a Árvore) e pelo botão do mestre.
+- "Passar 1 dia de treino" virou **Passar 1 descanso longo**: no painel do personagem conta para ele; na Mesa conta para todos. Agora conta o treino **e** as temporárias (antes só o treino).
+- Textos do painel explicam onde o descanso é contado.
+
 ## 1.7.3
 
 - **Testada e aprovada pelo autor no Foundry VTT** antes da publicação.

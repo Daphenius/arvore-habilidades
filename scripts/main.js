@@ -3,10 +3,10 @@
 //  Módulo Foundry VTT V14, sistema dnd5e 6
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { L, relabel } from "./i18n.js?v=1.7.3";
-import * as CORE from "./core.js?v=1.7.3";
-import { MOD, VERSION, ST, initCore, registerSettings, installSessionHooks, migrateFromMacro, migrateEffectKeys, getTrees, getData, setData, registerTidyTab, fixOrphans, isActiveGM, migrateRefundPlayer, applyTheme } from "./core.js?v=1.7.3";
-import { ArvoreHabilidades, APP_VERSION } from "./app.js?v=1.7.3";
+import { L, relabel } from "./i18n.js?v=1.7.5";
+import * as CORE from "./core.js?v=1.7.5";
+import { MOD, VERSION, ST, initCore, registerSettings, installSessionHooks, migrateFromMacro, migrateEffectKeys, getTrees, getData, setData, registerTidyTab, fixOrphans, isActiveGM, migrateRefundPlayer, applyTheme } from "./core.js?v=1.7.5";
+import { ArvoreHabilidades, APP_VERSION } from "./app.js?v=1.7.5";
 
 // Abre a janela ou traz para frente se já estiver aberta
 function openApp() {

@@ -3,7 +3,7 @@
 //  Métodos da janela ArvoreHabilidades (copiados para a classe em app.js)
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { L } from "./i18n.js?v=1.7.3";
+import { L } from "./i18n.js?v=1.7.5";
 import {
   ABILITIES, ACTIVATIONS, ApplicationV2, CFG, CHANGE_TYPES, DAMAGE_TYPES, DEFAULT_TYPE, DRAW_COLORS, DUR_UNITS,
   DialogV2 as DialogBase, FEAT_KINDS, FILTERS, FP, KEY_HINTS, K_FEATS, K_LOG, K_MILES, K_MYTH, K_RANKS, K_REQ,
@@ -18,11 +18,11 @@ import {
   setData, skillAvail, skillEarned, stFlag, systemType, topoNodes, trainingOf, treeHasMythic, uid, unlockedOf,
   whisperOwners, withRank, wouldCycle,
   K_TEMP, tempsOf, tempOf, tempText, grantTemp, endTemp, today, dateText, calApi
-} from "./core.js?v=1.7.3";
-import { SaveQueue } from "./persistence.js?v=1.7.3";
-import { validateTrees, remapTree } from "./validation.js?v=1.7.3";
-import { actorOperation } from "./operations.js?v=1.7.3";
-import { DialogV2, charCard, whoSub, whoTools, wireWho, datePicker, readDate, wireDate } from "./ui-kit.js?v=1.7.3";
+} from "./core.js?v=1.7.5";
+import { SaveQueue } from "./persistence.js?v=1.7.5";
+import { validateTrees, remapTree } from "./validation.js?v=1.7.5";
+import { actorOperation } from "./operations.js?v=1.7.5";
+import { DialogV2, charCard, whoSub, whoTools, wireWho, datePicker, readDate, wireDate } from "./ui-kit.js?v=1.7.5";
 
 export class MixPanel {
   // ── reembolso em lote ──
@@ -254,9 +254,10 @@ export class MixPanel {
     }).join("");
     const tmp = temps.map(e => { const tr = this.trees.find(x => x.id === e.tree), n = nodeById(tr, e.node); return row(tr, n, "fa-hourglass-end", esc(tempText(e)), null); }).join("");
     return `${trains ? `<div class="st-card"><div class="st-card-t"><i class="fas fa-dumbbell"></i> ${L("Em treino")}</div>${trains}
-      <p class="st-help">${L("Avança sozinho quando o personagem faz um descanso longo pela ficha.")}</p>
-      ${this.gm ? L`<button type="button" data-act="trainDay"><i class="fas fa-forward"></i> Passar 1 dia de treino</button>` : ""}</div>` : ""}
-      ${tmp ? `<div class="st-card"><div class="st-card-t"><i class="fas fa-hourglass-end"></i> ${L("Temporárias")}</div>${tmp}</div>` : ""}`;
+      <p class="st-help">${L("Conta a cada descanso longo: pela ficha, pelo botão Descanso longo do Calendário da Mesa ou por “Passar 1 descanso longo”.")}</p>
+      </div>` : ""}
+      ${tmp ? `<div class="st-card"><div class="st-card-t"><i class="fas fa-hourglass-end"></i> ${L("Temporárias")}</div>${tmp}</div>` : ""}
+      ${this.gm && (trains || temps.some(e => e.kind === "rests")) ? `<div class="st-btns" style="margin-top:4px"><button type="button" data-act="trainDay" data-tooltip="${L("Conta 1 descanso longo no treino e nas temporárias deste personagem (como um descanso longo pela ficha)")}"><i class="fas fa-campground"></i> ${L("Passar 1 descanso longo")}</button></div>` : ""}`;
   }
 
   async panelHTML() {
@@ -397,10 +398,10 @@ export class MixPanel {
       trainCard = `<div class="st-card st-traincard"><div class="st-card-t"><i class="fas fa-dumbbell"></i> ${L("Treino em andamento")}</div>
         <div class="st-trainbig"><b>${done}</b>/${total}<small>${L("descanso(s) longo(s)")}</small></div>
         <div class="st-mesa-bar"><i style="width:${Math.round(done / total * 100)}%"></i></div>
-        <p class="st-help">${L("Já está pago. A cada descanso longo feito pela ficha do personagem, conta 1. Quando completar, a habilidade é liberada sozinha.")}</p></div>`;
+        <p class="st-help">${L("Já está pago. Cada descanso longo conta 1 (pela ficha, pelo Calendário da Mesa ou pelo mestre). Quando completar, a habilidade é liberada sozinha.")}</p></div>`;
     } else if (TD && st.rank < st.max) {
       trainCard = `<div class="st-card st-traincard"><div class="st-card-t"><i class="fas fa-dumbbell"></i> ${L("Precisa de treino")}</div>
-        <ol class="st-steps"><li>${L("Clique em <b>Começar treino</b>: o custo é pago agora.")}</li>
+        <ol class="st-steps"><li>${L("Clique em <b>Treinar</b>: o custo é pago agora.")}</li>
           <li>${L`Faça <b>${TD} descanso(s) longo(s)</b> pela ficha (cada um conta 1).`}</li>
           <li>${L("A habilidade é liberada sozinha no último descanso.")}</li></ol></div>`;
     }
@@ -410,11 +411,16 @@ export class MixPanel {
       ${this.gm ? `<div class="st-btn-row" style="margin-top:6px"><button type="button" data-tempkeep="${esc(temp.id)}"><i class="fas fa-infinity"></i> ${L("Tornar permanente")}</button>
         <button type="button" data-tempend="${esc(temp.id)}"><i class="fas fa-xmark"></i> ${L("Remover agora")}</button></div>` : ""}</div>` : "";
 
-    let buyLabel = "";
-    if (st.canBuy) {
-      buyLabel = st.rank > 0 ? L`<i class="fas fa-arrow-up"></i> Subir para ${st.rank + 1}/${st.max}${costTxt ? ` — ${costTxt}` : ""}`
-        : `<i class="fas ${TD ? "fa-dumbbell" : "fa-unlock"}"></i> ${TD ? L`Começar treino (${TD} descanso(s))` : L("Desbloquear")}${costTxt ? ` — ${costTxt}` : ""}`;
-      if (t.approval && !this.gm) buyLabel = L`<i class="fas fa-hand"></i> Pedir ao mestre`;
+    // Botão principal: aparece sempre que ainda dá para comprar/treinar algum dia; cinza com o motivo quando não dá agora
+    let buyLabel = "", buyOff = "";
+    const canEver = a && !pending && st.key !== "training" && st.rank < st.max && !n.synergy && !(st.key === "locked" && n.secret && !this.gm && st.rank === 0);
+    if (canEver) {
+      const verb = TD ? (st.rank > 0 ? L`Treinar o nível ${st.rank + 1}` : L("Treinar")) : (st.rank > 0 ? L`Subir para ${st.rank + 1}/${st.max}` : L("Desbloquear"));
+      const icon = TD ? "fa-dumbbell" : st.rank > 0 ? "fa-arrow-up" : "fa-unlock";
+      const info = [TD ? L`${TD} descanso(s) longo(s)` : "", costTxt].filter(Boolean).join(" · ");
+      buyLabel = `<i class="fas ${icon}"></i> ${verb}${info ? ` <small>— ${info}</small>` : ""}`;
+      if (t.approval && !this.gm) buyLabel = `<i class="fas fa-hand"></i> ${TD ? L("Pedir ao mestre para treinar") : L("Pedir ao mestre")}${info ? ` <small>— ${info}</small>` : ""}`;
+      if (!st.canBuy) buyOff = (st.reasons ?? [])[0] ?? L("Ainda não disponível");
     }
 
     return L`
@@ -427,7 +433,9 @@ export class MixPanel {
       ${cmp}
       ${gains.length || items ? L`<div class="st-card"><div class="st-card-t"><i class="fas fa-gift"></i> O que você ganha</div>${gains.join("")}${items}</div>` : ""}
       <div class="st-btns">
-        ${a && buyLabel && !pending ? `<button type="button" class="st-big" data-act="unlock">${buyLabel}</button>` : ""}
+        ${a && buyLabel && !pending ? (buyOff
+          ? `<button type="button" class="st-big st-big-off" disabled>${buyLabel}</button><div class="st-why"><i class="fas fa-circle-info"></i> ${esc(buyOff)}</div>`
+          : `<button type="button" class="st-big" data-act="unlock">${buyLabel}</button>`) : ""}
         ${pending && !this.gm ? L`<button type="button" data-act="cancelReq"><i class="fas fa-xmark"></i> Cancelar pedido</button>` : ""}
         ${pending && this.gm ? L`<button type="button" class="st-big" data-reqact="approve" data-actor="${a.id}" data-req="${pending.id}"><i class="fas fa-check"></i> Aprovar pedido</button>
           <button type="button" data-reqact="deny" data-actor="${a.id}" data-req="${pending.id}"><i class="fas fa-xmark"></i> Recusar pedido</button>` : ""}

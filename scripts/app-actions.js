@@ -3,7 +3,7 @@
 //  Métodos da janela ArvoreHabilidades (copiados para a classe em app.js)
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { L } from "./i18n.js?v=1.7.3";
+import { L } from "./i18n.js?v=1.7.5";
 import {
   ABILITIES, ACTIVATIONS, ApplicationV2, CFG, CHANGE_TYPES, DAMAGE_TYPES, DEFAULT_TYPE, DRAW_COLORS, DUR_UNITS,
   DialogV2 as DialogBase, FEAT_KINDS, FILTERS, FP, KEY_HINTS, K_FEATS, K_LOG, K_MILES, K_MYTH, K_RANKS, K_REQ,
@@ -17,12 +17,12 @@ import {
   refundDependents, reqsOf, resOf, featDefaults, findFeat, hasFeat, trimFeats, treeLock, treesOpenedBy, playerSees, resPresets, presetOf, resPathOf, THEMES, applyTheme, extraRes, resPath, resFromPath, syncPrimary, nodeExtras, extraName, LABEL_DEFAULTS, labelsOf, coinsOn, RES_KINDS, sumExtras, addExtras, addRes, addCoins, coinWorth, resUpdate, revoke, saveCfg, saveFile, saveTemplates, saveTrees, sendRequest,
   setData, skillAvail, skillEarned, stFlag, systemType, topoNodes, trainingOf, treeHasMythic, uid, unlockedOf,
   whisperOwners, withRank, wouldCycle,
-  K_TEMP, tempsOf, tempOf, tempText, grantTemp, endTemp, today, dateText, calApi
-} from "./core.js?v=1.7.3";
-import { SaveQueue } from "./persistence.js?v=1.7.3";
-import { validateTrees, remapTree } from "./validation.js?v=1.7.3";
-import { actorOperation } from "./operations.js?v=1.7.3";
-import { DialogV2, charCard, whoSub, whoTools, wireWho, datePicker, readDate, wireDate } from "./ui-kit.js?v=1.7.3";
+  K_TEMP, tempsOf, tempOf, tempText, grantTemp, endTemp, today, dateText, calApi, longRest, longRestAll, restingActors
+} from "./core.js?v=1.7.5";
+import { SaveQueue } from "./persistence.js?v=1.7.5";
+import { validateTrees, remapTree } from "./validation.js?v=1.7.5";
+import { actorOperation } from "./operations.js?v=1.7.5";
+import { DialogV2, charCard, whoSub, whoTools, wireWho, datePicker, readDate, wireDate } from "./ui-kit.js?v=1.7.5";
 
 export class MixActions {
   // ── ações ──
@@ -195,7 +195,12 @@ export class MixActions {
         return;
       }
       case "cancelTrain": return cancelTraining(a, t, n);
-      case "trainDay": return advanceTraining(a, 1);
+      case "trainDay": {
+        if (!a) return;
+        await longRest(a);
+        ui.notifications.info(L`Descanso longo contado para ${a.name}.`);
+        return this.render();
+      }
       case "addMile": {
         if (!a) return;
         const m = await DialogV2.prompt({

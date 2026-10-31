@@ -3,7 +3,7 @@
 //  Métodos da janela ArvoreHabilidades (copiados para a classe em app.js)
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { L } from "./i18n.js?v=1.7.3";
+import { L } from "./i18n.js?v=1.7.5";
 import {
   ABILITIES, ACTIVATIONS, ApplicationV2, CFG, CHANGE_TYPES, DAMAGE_TYPES, DEFAULT_TYPE, DRAW_COLORS, DUR_UNITS,
   DialogV2 as DialogBase, FEAT_KINDS, FILTERS, FP, KEY_HINTS, K_FEATS, K_LOG, K_MILES, K_MYTH, K_RANKS, K_REQ,
@@ -17,12 +17,12 @@ import {
   refundDependents, reqsOf, resOf, featDefaults, findFeat, hasFeat, trimFeats, treeLock, treesOpenedBy, playerSees, resPresets, presetOf, resPathOf, THEMES, applyTheme, extraRes, resPath, resFromPath, syncPrimary, nodeExtras, extraName, LABEL_DEFAULTS, labelsOf, coinsOn, RES_KINDS, sumExtras, addExtras, addRes, addCoins, coinWorth, resUpdate, revoke, saveCfg, saveFile, saveTemplates, saveTrees, sendRequest,
   setData, skillAvail, skillEarned, stFlag, systemType, topoNodes, trainingOf, treeHasMythic, uid, unlockedOf,
   whisperOwners, withRank, wouldCycle,
-  K_TEMP, tempsOf, tempOf, tempText, grantTemp, endTemp, today, dateText, calApi, syncShared, sharedCopies, SHARED_SKIP, resDesc, addResDesc, payBack
-} from "./core.js?v=1.7.3";
-import { SaveQueue } from "./persistence.js?v=1.7.3";
-import { validateTrees, remapTree } from "./validation.js?v=1.7.3";
-import { actorOperation } from "./operations.js?v=1.7.3";
-import { DialogV2, charCard, whoSub, whoTools, wireWho, datePicker, readDate, wireDate } from "./ui-kit.js?v=1.7.3";
+  K_TEMP, tempsOf, tempOf, tempText, grantTemp, endTemp, today, dateText, calApi, syncShared, sharedCopies, SHARED_SKIP, resDesc, addResDesc, payBack, longRest, longRestAll, restingActors
+} from "./core.js?v=1.7.5";
+import { SaveQueue } from "./persistence.js?v=1.7.5";
+import { validateTrees, remapTree } from "./validation.js?v=1.7.5";
+import { actorOperation } from "./operations.js?v=1.7.5";
+import { DialogV2, charCard, whoSub, whoTools, wireWho, datePicker, readDate, wireDate } from "./ui-kit.js?v=1.7.5";
 
 export class MixDialogs {
   // Exclui a seção atual. Árvores dentro dela são movidas para outra seção ou excluídas junto.
@@ -208,7 +208,7 @@ export class MixDialogs {
       window: { title: L("Mesa — visão geral"), icon: "fas fa-users" }, position: { width: 900 },
       content: `<div class="st-c">
         <div class="st-mesa-acts">
-          ${act("reward", "fa-gift", L("Recompensa em grupo"))}${act("train", "fa-forward", L("Passar 1 dia de treino (todos)"))}
+          ${act("reward", "fa-gift", L("Recompensa em grupo"))}${act("train", "fa-campground", L("Passar 1 descanso longo (todos)"), L("Conta 1 descanso longo no treino e nas habilidades temporárias de todos os personagens"))}
           ${act("npc", "fa-skull", L("Aplicar Skill Tree em NPC"))}${act("feat", "fa-star", L("Grande Feito"))}
           ${act("journal", "fa-scroll", L("Diário da sessão"))}${act("fix", "fa-screwdriver-wrench", L("Corrigir pontos"), L("Devolve os pontos de habilidades e Skill Trees que foram excluídas e tira da ficha o que veio delas"))}
         </div>
@@ -241,10 +241,9 @@ export class MixDialogs {
           else if (b.dataset.mesa === "journal") this.journalDialog();
           else if (b.dataset.mesa === "fix") this.fixPoints();
           else {
-            const list = game.actors.filter(a => trainingOf(a).length);
-            if (!list.length) return ui.notifications.info(L("Ninguém está treinando."));
-            for (const a of list) await advanceTraining(a, 1);
-            ui.notifications.info(L`Treino avançado para ${list.length} personagem(ns).`);
+            const list = await longRestAll();
+            if (!list.length) return ui.notifications.info(L("Ninguém está treinando nem tem habilidade temporária por descanso."));
+            ui.notifications.info(L`Descanso longo contado para ${list.length} personagem(ns).`);
           }
         }));
       }
@@ -892,7 +891,7 @@ export class MixDialogs {
     const extra = [coinsOn(t) && Number(n.costGp) ? `${n.costGp} PO` : "", coinsOn(t) && Number(n.costPp) ? `${n.costPp} PL` : "",
       ...Object.entries(nodeExtras(t, n)).map(([p, v]) => `${v} ${extraName(t, p)}`), ...n.consume.map(x => `${Number(x.qty) || 1}× ${x.name}`)].filter(Boolean);
     const ok = await DialogV2.confirm({
-      window: { title: st.rank ? L("Subir de nível") : L("Desbloquear habilidade") },
+      window: { title: Number(n.trainDays) ? L("Treinar habilidade") : st.rank ? L("Subir de nível") : L("Desbloquear habilidade") },
       content: L`<p>${st.rank ? L`Subir <b>${esc(n.name)}</b> para o nível ${st.rank + 1}/${st.max}` : L`Desbloquear <b>${esc(n.name)}</b>`} para <b>${esc(a.name)}</b>${st.cost ? L` por <b>${st.cost} ${esc(t.resLabel)}</b>` : ""}${extra.length ? ` + ${esc(extra.join(", "))}` : ""}?</p>
           ${Number(n.trainDays) ? L`<p>⏳ Fica pronta depois de ${n.trainDays} descanso(s) longo(s) de treino.</p>` : ""}`
     });

@@ -4,8 +4,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { SaveQueue } from '../scripts/persistence.js';
 import { validateTrees, remapTree } from '../scripts/validation.js';
-import { actorOperation } from '../scripts/operations.js?v=1.7.3';
-const core=await import('../scripts/core.js?v=1.7.3');
+import { actorOperation } from '../scripts/operations.js?v=1.7.5';
+const core=await import('../scripts/core.js?v=1.7.5');
 const {ArvoreHabilidades}=await import('../scripts/app.js');
 let count=0;
 async function test(name,fn) { await fn(); console.log('PASS',name);count++; }
@@ -30,7 +30,7 @@ function actor(){
 function tree(){const n=core.newNode(0,0,{name:'Ability',cost:3}); const t=core.newTree('Test');t.resPath='system.resources.mana.value';t.nodes=[n];return{t,n};}
 await test('queue keeps latest snapshot and serializes writes',async()=>{const calls=[],gate=defer();const q=new SaveQueue(async v=>{calls.push(v);if(calls.length===1)await gate.promise;});q.stage([1]);const p=q.flush();q.stage([2]);q.stage([3]);assert.equal(calls.length,1);gate.resolve();await p;assert.deepEqual(calls,[[1],[3]]);assert.equal(q.dirty,false);});
 await test('failed save remains pending and can retry',async()=>{let fails=true;const q=new SaveQueue(async()=>{if(fails)throw Error('disk');});q.stage([1]);await assert.rejects(q.flush());assert.equal(q.dirty,true);fails=false;await q.flush();assert.equal(q.dirty,false);});
-await test('all 33 exported JSON trees validate',()=>{const files=fs.readdirSync('arvores-individuais').filter(f=>f.endsWith('.json')&&f!=='indice.json');assert.equal(files.length,33);for(const f of files)validateTrees(JSON.parse(fs.readFileSync(`arvores-individuais/${f}`)));});
+await test('example trees in "Exemplo de Arvores" validate',()=>{const d='Exemplo de Arvores';const files=fs.readdirSync(d).filter(f=>f.endsWith('.json'));assert.ok(files.length>=3);for(const f of files)validateTrees(JSON.parse(fs.readFileSync(`${d}/${f}`)));});
 await test('invalid IDs, cycles and drawing coordinates rejected',()=>{const {t,n}=tree();t.nodes.push({...n});assert.throws(()=>validateTrees(t));t.nodes.pop();t.edges=[{from:n.id,to:n.id}];assert.throws(()=>validateTrees(t));t.edges=[];t.drawings=[{id:'ok',type:'path',points:[['" onload="x',0]]}];assert.throws(()=>validateTrees(t));});
 await test('copy remaps internal requirements and preserves external links',()=>{const {t,n}=tree();n.reqNodes=[{tree:t.id,node:n.id},{tree:'external',node:'other'}];const copy=remapTree(t,'new',new Map([[n.id,'newNode']]));assert.deepEqual(copy.nodes[0].reqNodes,[{tree:'new',node:'newNode'},{tree:'external',node:'other'}]);assert.equal(t.nodes[0].id,n.id);});
 await test('old potion trees become ordinary point trees, keep IDs, section and progress data',()=>{const {t,n}=tree();t.mode='sequence';t.sanPath='x';t.acting=[{name:'a',value:5}];n.seq='9';n.ingredients=[{name:'erva'}];n.digestReq=50;const id=t.id;
@@ -249,7 +249,7 @@ await test('tree settings save the lock options',async()=>{
  await app.close();game.settings.get=()=>undefined;core.invalidateTrees();
 });
 await test('english: every screen keeps the same HTML structure and user names are never translated',async()=>{
- const i18n=await import('../scripts/i18n.js?v=1.7.3');
+ const i18n=await import('../scripts/i18n.js?v=1.7.5');
  const A=tree(),B=tree();A.t.name='Escudo de Luz';A.t.desc='Nível de proteção';A.t.feats=[{id:'f1',name:'Salvou o reino',pts:2}];B.t.lockKind='feat';B.t.lockFeat='f1';
  A.n.name='Nova habilidade';A.n.ranks=2;A.n.features=[core.featureDefaults()];core.normalizeTree(A.t);
  const a=actor();A.t.assigned=[a.id];game.actors.push(a);
@@ -321,7 +321,7 @@ await test('shared abilities: editing one copy updates the others, keeps positio
  await app.close();game.settings.get=()=>undefined;core.invalidateTrees();
 });
 await test('validator finds impossible and loose abilities; stats add up the cost to take everything',async()=>{
- const tools=await import('../scripts/app-tools.js?v=1.7.3');
+ const tools=await import('../scripts/app-tools.js?v=1.7.5');
  const {t,n}=tree();const a2=core.newNode(200,0,{name:'B',cost:2,group:'g'}),a3=core.newNode(400,0,{name:'C',cost:4,group:'g'}),a4=core.newNode(600,0,{name:'D',cost:1}),lone=core.newNode(900,900,{name:'Solta',cost:1});
  t.nodes.push(a2,a3,a4,lone);t.edges=[{from:n.id,to:a2.id},{from:n.id,to:a3.id},{from:a2.id,to:a4.id},{from:a3.id,to:a4.id}];
  a4.reqNodes=[{tree:'gone',node:'x'}];
@@ -334,7 +334,7 @@ await test('validator finds impossible and loose abilities; stats add up the cos
 await test('import by link converts GitHub page links and imports the JSON; welcome shows once',async()=>{
  const {t}=tree();t.name='Remota';const settings={trees:{list:[]},welcomeSeen:false};game.settings.get=(m,k)=>settings[k];game.settings.set=async(m,k,v)=>settings[k]=v;core.invalidateTrees();core.ST.catalog={};
  const app=new ArvoreHabilidades();
- const io=await import('../scripts/app-io.js?v=1.7.3');assert.equal(io.rawLink('https://github.com/u/r/blob/main/a/b.json'),'https://raw.githubusercontent.com/u/r/main/a/b.json');
+ const io=await import('../scripts/app-io.js?v=1.7.5');assert.equal(io.rawLink('https://github.com/u/r/blob/main/a/b.json'),'https://raw.githubusercontent.com/u/r/main/a/b.json');
  let asked=null;globalThis.fetch=async u=>{asked=u;return{ok:true,status:200,headers:{get:()=>null},text:async()=>JSON.stringify([t])};};
  const D=foundry.applications.api.DialogV2;D.prompt=async o=>o.ok.callback?o.ok.callback(null,{form:{elements:{url:{value:'https://github.com/u/r/blob/main/x.json'}}}}):null;
  await app.importLink();assert.equal(asked,'https://raw.githubusercontent.com/u/r/main/x.json');assert.equal(settings.trees.list.length,1);assert.equal(settings.trees.list[0].name,'Remota');
@@ -397,6 +397,17 @@ await test('sheet cleanup: refund removes granted items now; deleting a tree cle
  await core.doUnlock(a,t,n,{quiet:true});assert.equal(a.items.size,1);
  const D=foundry.applications.api.DialogV2;D.confirm=async()=>true;const app=new ArvoreHabilidades();app.treeId=t.id;
  await app.onAction('delTree');assert.equal(a.items.size,0);assert.equal(a.system.resources.mana.value,10);assert.equal(settings.trees.list.length,0);
+ await app.close();game.actors.length=0;game.settings.get=()=>undefined;core.invalidateTrees();
+});
+await test('long rest from the GM button, the Mesa and the calendar counts temporaries and training',async()=>{
+ const a=actor(),{t,n}=tree();t.rules='custom';t.assigned=[a.id];game.actors.push(a);
+ const n2=core.newNode(5,5,{name:'Treino',cost:1,trainDays:2});t.nodes.push(n2);
+ const settings={trees:{list:[t]}};game.settings.get=(m,k)=>settings[k];game.settings.set=async(m,k,v)=>settings[k]=v;core.invalidateTrees();core.ST.catalog={};
+ await core.grantTemp(a,t,n,{kind:'rests',left:2});await core.doUnlock(a,t,n2,{quiet:true});assert.equal(core.trainingOf(a)[0].left,2);
+ const app=new ArvoreHabilidades();app.actorId=a.id;app.treeId=t.id;
+ await app.onAction('trainDay');assert.equal(core.tempsOf(a)[0].left,1);assert.equal(core.trainingOf(a)[0].left,1);
+ const list=await core.longRestAll();assert.equal(list.length,1);
+ assert.equal(core.rankOf(a,t,n),0,'temporary ended');assert.equal(core.tempsOf(a).length,0);assert.equal(core.rankOf(a,t,n2),1,'training finished');
  await app.close();game.actors.length=0;game.settings.get=()=>undefined;core.invalidateTrees();
 });
 console.log(`TOTAL: ${count} passed`);

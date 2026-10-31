@@ -1,5 +1,5 @@
-import { L, isEnglish } from "./i18n.js?v=1.7.3";
-import { actorOperation } from "./operations.js?v=1.7.3";
+import { L, isEnglish } from "./i18n.js?v=1.7.5";
+import { actorOperation } from "./operations.js?v=1.7.5";
 const INTERNAL = Symbol("skill-tree-operation");
 // ═══════════════════════════════════════════════════════════════════════════
 //  Árvore da Mesa — núcleo: dados, regras, ficha e automações
@@ -9,7 +9,7 @@ const INTERNAL = Symbol("skill-tree-operation");
 // Os dados dos personagens ficam em flags.{SCOPE} ("world") — o mesmo da macro antiga,
 // para manter todo o progresso já existente.
 export const MOD = "arvore-habilidades";
-export const VERSION = "1.7.3"; // tem que bater com o module.json
+export const VERSION = "1.7.5"; // tem que bater com o module.json
 // Registro compartilhado entre os arquivos (janela aberta, área de transferência…)
 export const ST = { app: null, open: null, openApp: null, session: null, catalog: null, clipboard: null, synBusy: false, tidy: false };
 
@@ -269,7 +269,7 @@ export const playerSees = (t, a) => !!a && canSee(t, a.id) && !(t.lockHide && tr
 export function normalizeNode(n) {
   const nn = { ...nodeDefaults(), ...n };
   for (const k of ["items", "changes", "features", "consume", "reqClasses", "reqItems", "rankDescs", "reqNodes"]) nn[k] = Array.isArray(nn[k]) ? nn[k] : [];
-  // 1.7.3: poções e digestão saíram do módulo
+  // 1.7.5: poções e digestão saíram do módulo
   for (const k of ["seq", "digestReq", "potionDC", "sanLoss", "ingredients"]) delete nn[k];
   nn.extra = nn.extra && typeof nn.extra === "object" && !Array.isArray(nn.extra) ? Object.fromEntries(Object.entries(nn.extra).map(([k, v]) => [k, Math.max(0, Number(v) || 0)])) : {};
   // versão antiga: uma única habilidade na ficha
@@ -292,7 +292,7 @@ export function normalizeTree(t) {
   // 1.3.1: "Peças de Ouro" virou "Ouro", que também aceita Platina (mesma escala em PO)
   if (t.resPath === "system.currency.gp") t.resPath = COINS;
   Object.assign(t, { ...treeDefaults(), ...t });
-  // 1.7.3: árvores do antigo modo Sequências (poções e digestão) viram árvores de pontos comuns
+  // 1.7.5: árvores do antigo modo Sequências (poções e digestão) viram árvores de pontos comuns
   if (t.mode === "sequence") {
     if (!t.section) t.section = "sequences";
     t.mode = "skill"; t.rules = "custom";
@@ -1675,6 +1675,21 @@ export async function tickTemps(a, { rest = false } = {}) {
   if (changed) await a.update({ [K_TEMP]: list });
   for (const id of end) await endTemp(a, id);
 }
+// Um descanso longo para o personagem: avança o treino e conta as temporárias por descanso
+export async function longRest(a) {
+  if (!a) return false;
+  const had = trainingOf(a).length || tempsOf(a).some(e => e.kind === "rests");
+  if (trainingOf(a).length) await advanceTraining(a, 1);
+  await tickTemps(a, { rest: true });
+  return !!had;
+}
+// quem tem treino ou temporária por descanso
+export const restingActors = () => game.actors.filter(x => trainingOf(x).length || tempsOf(x).some(e => e.kind === "rests"));
+export async function longRestAll() {
+  const list = restingActors();
+  for (const a of list) await longRest(a);
+  return list;
+}
 export async function tickAllTemps(opts = {}) {
   for (const a of game.actors.filter(x => getProp(x, K_TEMP)?.length)) await tickTemps(a, opts);
 }
@@ -1769,9 +1784,15 @@ export function installSessionHooks() {
   on("updateCombat", (c, ch) => { if (isActiveGM() && ("round" in ch || "turn" in ch)) checkExpiry(); });
   on("updateWorldTime", () => { if (isActiveGM()) checkExpiry(); });
   on("dnd5e.restCompleted", (actor, result, config) => {
-    const long = result?.longRest ?? (config?.type === "long");
+    const long = result?.longRest ?? (result?.type === "long" || config?.type === "long");
     if (!long || !isActiveGM()) return;
-    return (async () => { if (trainingOf(actor).length) await advanceTraining(actor, 1); await tickTemps(actor, { rest: true }); })();
+    return longRest(actor);
+  });
+  // botão "Descanso longo" do Calendário da Mesa: só avança o relógio, então conta o descanso aqui
+  on("calendarioMesa.descansoLongo", async () => {
+    if (!game.user.isGM) return;
+    const list = await longRestAll();
+    if (list.length) ui.notifications.info(L`Descanso longo: treino e habilidades temporárias contados para ${list.length} personagem(ns).`);
   });
   // dia novo: temporárias com data e árvores/habilidades que abrem numa data
   let lastDay = null;
