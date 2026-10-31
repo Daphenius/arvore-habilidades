@@ -1,5 +1,18 @@
 # Histórico de versões — Árvore da Mesa
 
+## 1.7.7
+
+- **Descanso longo feito pelo jogador na própria ficha agora conta** para o treino e para as habilidades temporárias. O D&D 5e só avisa o descanso no computador de quem descansou, então antes só funcionava quando o mestre fazia o descanso. Agora a ficha guarda o descanso e o computador do mestre conta na hora.
+- Se o mestre estiver fora, os descansos ficam guardados e são contados quando ele entrar no mundo.
+- O mestre recebe um aviso "Descanso longo de (personagem): treino e habilidades temporárias contados" sempre que um descanso conta.
+
+## 1.7.6
+
+- **Atualizar não exige mais reiniciar o Foundry.** A versão é lida direto do `module.json` atualizado, e não da cópia que o Foundry guarda na memória até reiniciar. Antes, essa diferença mostrava o aviso "arquivos antigos" mesmo com tudo certo.
+- Se o navegador ainda estiver com arquivos velhos, o módulo recarrega a página sozinho uma vez. O aviso de Ctrl+F5 só aparece se isso não resolver.
+- A lista de módulos do Foundry pode continuar mostrando o número antigo até o próximo reinício; isso é só o rótulo, o módulo já roda a versão nova.
+- README: selo **Testado no Foundry VTT e D&D 5e**, válido para todas as versões.
+
 ## 1.7.5
 
 - Botão **Treinar** para os jogadores: habilidades com treino mostram "Treinar — N descansos longos · custo". Com aprovação do mestre, "Pedir ao mestre para treinar".

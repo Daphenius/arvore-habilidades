@@ -4,8 +4,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { SaveQueue } from '../scripts/persistence.js';
 import { validateTrees, remapTree } from '../scripts/validation.js';
-import { actorOperation } from '../scripts/operations.js?v=1.7.5';
-const core=await import('../scripts/core.js?v=1.7.5');
+const V=JSON.parse(fs.readFileSync(new URL('../module.json',import.meta.url))).version;
+const {actorOperation}=await import(`../scripts/operations.js?v=${V}`);
+const core=await import(`../scripts/core.js?v=${V}`);
 const {ArvoreHabilidades}=await import('../scripts/app.js');
 let count=0;
 async function test(name,fn) { await fn(); console.log('PASS',name);count++; }
@@ -249,7 +250,7 @@ await test('tree settings save the lock options',async()=>{
  await app.close();game.settings.get=()=>undefined;core.invalidateTrees();
 });
 await test('english: every screen keeps the same HTML structure and user names are never translated',async()=>{
- const i18n=await import('../scripts/i18n.js?v=1.7.5');
+ const i18n=await import(`../scripts/i18n.js?v=${V}`);
  const A=tree(),B=tree();A.t.name='Escudo de Luz';A.t.desc='Nível de proteção';A.t.feats=[{id:'f1',name:'Salvou o reino',pts:2}];B.t.lockKind='feat';B.t.lockFeat='f1';
  A.n.name='Nova habilidade';A.n.ranks=2;A.n.features=[core.featureDefaults()];core.normalizeTree(A.t);
  const a=actor();A.t.assigned=[a.id];game.actors.push(a);
@@ -321,7 +322,7 @@ await test('shared abilities: editing one copy updates the others, keeps positio
  await app.close();game.settings.get=()=>undefined;core.invalidateTrees();
 });
 await test('validator finds impossible and loose abilities; stats add up the cost to take everything',async()=>{
- const tools=await import('../scripts/app-tools.js?v=1.7.5');
+ const tools=await import(`../scripts/app-tools.js?v=${V}`);
  const {t,n}=tree();const a2=core.newNode(200,0,{name:'B',cost:2,group:'g'}),a3=core.newNode(400,0,{name:'C',cost:4,group:'g'}),a4=core.newNode(600,0,{name:'D',cost:1}),lone=core.newNode(900,900,{name:'Solta',cost:1});
  t.nodes.push(a2,a3,a4,lone);t.edges=[{from:n.id,to:a2.id},{from:n.id,to:a3.id},{from:a2.id,to:a4.id},{from:a3.id,to:a4.id}];
  a4.reqNodes=[{tree:'gone',node:'x'}];
@@ -334,7 +335,7 @@ await test('validator finds impossible and loose abilities; stats add up the cos
 await test('import by link converts GitHub page links and imports the JSON; welcome shows once',async()=>{
  const {t}=tree();t.name='Remota';const settings={trees:{list:[]},welcomeSeen:false};game.settings.get=(m,k)=>settings[k];game.settings.set=async(m,k,v)=>settings[k]=v;core.invalidateTrees();core.ST.catalog={};
  const app=new ArvoreHabilidades();
- const io=await import('../scripts/app-io.js?v=1.7.5');assert.equal(io.rawLink('https://github.com/u/r/blob/main/a/b.json'),'https://raw.githubusercontent.com/u/r/main/a/b.json');
+ const io=await import(`../scripts/app-io.js?v=${V}`);assert.equal(io.rawLink('https://github.com/u/r/blob/main/a/b.json'),'https://raw.githubusercontent.com/u/r/main/a/b.json');
  let asked=null;globalThis.fetch=async u=>{asked=u;return{ok:true,status:200,headers:{get:()=>null},text:async()=>JSON.stringify([t])};};
  const D=foundry.applications.api.DialogV2;D.prompt=async o=>o.ok.callback?o.ok.callback(null,{form:{elements:{url:{value:'https://github.com/u/r/blob/main/x.json'}}}}):null;
  await app.importLink();assert.equal(asked,'https://raw.githubusercontent.com/u/r/main/x.json');assert.equal(settings.trees.list.length,1);assert.equal(settings.trees.list[0].name,'Remota');
@@ -409,5 +410,16 @@ await test('long rest from the GM button, the Mesa and the calendar counts tempo
  const list=await core.longRestAll();assert.equal(list.length,1);
  assert.equal(core.rankOf(a,t,n),0,'temporary ended');assert.equal(core.tempsOf(a).length,0);assert.equal(core.rankOf(a,t,n2),1,'training finished');
  await app.close();game.actors.length=0;game.settings.get=()=>undefined;core.invalidateTrees();
+});
+await test('long rest done by a player on the sheet is counted by the GM (also after logging in)',async()=>{
+ const a=actor(),{t,n}=tree();t.rules='custom';t.assigned=[a.id];game.actors.push(a);
+ const n2=core.newNode(5,5,{name:'Treino',cost:1,trainDays:2});t.nodes.push(n2);
+ const settings={trees:{list:[t]}};game.settings.get=(m,k)=>settings[k];game.settings.set=async(m,k,v)=>settings[k]=v;core.invalidateTrees();core.ST.catalog={};
+ await core.grantTemp(a,t,n,{kind:'rests',left:2});await core.doUnlock(a,t,n2,{quiet:true});
+ const users=game.users;game.users=Object.assign([],{activeGM:{id:game.user.id}});
+ await a.update({'flags.world.stRestQ':2});await core.processAllRestQueues();
+ assert.equal(core.getProp(a,'flags.world.stRestQ'),0);assert.equal(core.tempsOf(a).length,0,'temporary ended');assert.equal(core.rankOf(a,t,n2),1,'training finished');
+ await core.processAllRestQueues();
+ game.users=users;game.actors.length=0;game.settings.get=()=>undefined;core.invalidateTrees();
 });
 console.log(`TOTAL: ${count} passed`);

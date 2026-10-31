@@ -1,5 +1,5 @@
-import { L, isEnglish } from "./i18n.js?v=1.7.5";
-import { actorOperation } from "./operations.js?v=1.7.5";
+import { L, isEnglish } from "./i18n.js?v=1.7.7";
+import { actorOperation } from "./operations.js?v=1.7.7";
 const INTERNAL = Symbol("skill-tree-operation");
 // ═══════════════════════════════════════════════════════════════════════════
 //  Árvore da Mesa — núcleo: dados, regras, ficha e automações
@@ -9,7 +9,7 @@ const INTERNAL = Symbol("skill-tree-operation");
 // Os dados dos personagens ficam em flags.{SCOPE} ("world") — o mesmo da macro antiga,
 // para manter todo o progresso já existente.
 export const MOD = "arvore-habilidades";
-export const VERSION = "1.7.5"; // tem que bater com o module.json
+export const VERSION = "1.7.7"; // tem que bater com o module.json
 // Registro compartilhado entre os arquivos (janela aberta, área de transferência…)
 export const ST = { app: null, open: null, openApp: null, session: null, catalog: null, clipboard: null, synBusy: false, tidy: false };
 
@@ -36,6 +36,8 @@ export const K_MILES = `flags.${SCOPE}.milestones`;
 export const K_LASTLVL = `flags.${SCOPE}.skillPoints.lastLevel`;
 export const K_AVAIL = `flags.${SCOPE}.skillAvail`;
 export const K_TEMP = `flags.${SCOPE}.skillTemp`;
+// descansos longos feitos por jogadores, esperando o mestre contar (o gancho do dnd5e só roda no cliente de quem descansou)
+export const K_RESTQ = `flags.${SCOPE}.stRestQ`;
 export const SKILL_SPENT = `flags.${SCOPE}.skillPoints.spent`;
 export const SKILL_BONUS = `flags.${SCOPE}.skillPoints.bonus`;
 export const K_MYTH = `flags.${SCOPE}.mythic.value`;
@@ -269,7 +271,7 @@ export const playerSees = (t, a) => !!a && canSee(t, a.id) && !(t.lockHide && tr
 export function normalizeNode(n) {
   const nn = { ...nodeDefaults(), ...n };
   for (const k of ["items", "changes", "features", "consume", "reqClasses", "reqItems", "rankDescs", "reqNodes"]) nn[k] = Array.isArray(nn[k]) ? nn[k] : [];
-  // 1.7.5: poções e digestão saíram do módulo
+  // 1.7.7: poções e digestão saíram do módulo
   for (const k of ["seq", "digestReq", "potionDC", "sanLoss", "ingredients"]) delete nn[k];
   nn.extra = nn.extra && typeof nn.extra === "object" && !Array.isArray(nn.extra) ? Object.fromEntries(Object.entries(nn.extra).map(([k, v]) => [k, Math.max(0, Number(v) || 0)])) : {};
   // versão antiga: uma única habilidade na ficha
@@ -292,7 +294,7 @@ export function normalizeTree(t) {
   // 1.3.1: "Peças de Ouro" virou "Ouro", que também aceita Platina (mesma escala em PO)
   if (t.resPath === "system.currency.gp") t.resPath = COINS;
   Object.assign(t, { ...treeDefaults(), ...t });
-  // 1.7.5: árvores do antigo modo Sequências (poções e digestão) viram árvores de pontos comuns
+  // 1.7.7: árvores do antigo modo Sequências (poções e digestão) viram árvores de pontos comuns
   if (t.mode === "sequence") {
     if (!t.section) t.section = "sequences";
     t.mode = "skill"; t.rules = "custom";
@@ -1690,6 +1692,28 @@ export async function longRestAll() {
   for (const a of list) await longRest(a);
   return list;
 }
+// conta o descanso e avisa o mestre (sem aviso quando o personagem não tem treino nem temporária por descanso)
+export async function restCounted(a, times = 1) {
+  let any = false;
+  for (let i = 0; i < times; i++) any = (await longRest(a)) || any;
+  if (any) ui.notifications.info(L`Descanso longo de ${a.name}: treino e habilidades temporárias contados.`);
+  return any;
+}
+// descansos que jogadores fizeram pela ficha (também os feitos enquanto o mestre estava fora)
+const RESTQ_BUSY = new Set();
+export async function processRestQueue(a) {
+  if (!a || !isActiveGM() || RESTQ_BUSY.has(a.id)) return;
+  const n = Number(getProp(a, K_RESTQ)) || 0;
+  if (n <= 0) return;
+  RESTQ_BUSY.add(a.id);
+  try {
+    await a.update({ [K_RESTQ]: 0 });
+    await restCounted(a, Math.min(n, 30));
+  } finally { RESTQ_BUSY.delete(a.id); }
+}
+export async function processAllRestQueues() {
+  for (const a of game.actors.filter(x => Number(getProp(x, K_RESTQ)) > 0)) await processRestQueue(a);
+}
 export async function tickAllTemps(opts = {}) {
   for (const a of game.actors.filter(x => getProp(x, K_TEMP)?.length)) await tickTemps(a, opts);
 }
@@ -1774,6 +1798,7 @@ export function installSessionHooks() {
     if (!isActiveGM()) return;
     onHpChange(a, changes, options);
     const fl = changes?.flags?.[SCOPE] ?? {};
+    if (Number(fl.stRestQ) > 0) { processRestQueue(a); return; }
     const keys = Object.keys(fl);
     if (keys.length === 1 && keys[0] === "skillAvail" && !changes.system) return; // a própria gravação do aviso
     // depois de uma compra/reembolso só atualiza a lista, sem aviso (o jogador está vendo a árvore)
@@ -1783,10 +1808,14 @@ export function installSessionHooks() {
   on("deleteActiveEffect", eff => { if (isActiveGM()) onEffectDeleted(eff); });
   on("updateCombat", (c, ch) => { if (isActiveGM() && ("round" in ch || "turn" in ch)) checkExpiry(); });
   on("updateWorldTime", () => { if (isActiveGM()) checkExpiry(); });
+  // Descanso longo pela ficha. O dnd5e só avisa no computador de quem descansou:
+  // no mestre conta na hora; no jogador, marca na ficha e o mestre conta quando receber.
   on("dnd5e.restCompleted", (actor, result, config) => {
     const long = result?.longRest ?? (result?.type === "long" || config?.type === "long");
-    if (!long || !isActiveGM()) return;
-    return longRest(actor);
+    if (!long || !actor) return;
+    if (isActiveGM()) return restCounted(actor);
+    if (!actor.isOwner) return;
+    return actor.update({ [K_RESTQ]: (Number(getProp(actor, K_RESTQ)) || 0) + 1 });
   });
   // botão "Descanso longo" do Calendário da Mesa: só avança o relógio, então conta o descanso aqui
   on("calendarioMesa.descansoLongo", async () => {

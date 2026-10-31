@@ -1,6 +1,6 @@
 # Árvore da Mesa
 
-**Versão 1.7.5** · Foundry VTT 14 · D&D 5e 6 · Português e English · Licença MIT · ✅ Testado e aprovado no Foundry (1.7.3)
+**Versão 1.7.7** · Foundry VTT 14 · D&D 5e 6 · Português e English · Licença MIT · ✅ Testado no Foundry VTT e D&D 5e
 
 ![Árvore da Mesa no Foundry VTT](<docs/Arvore de Habilidades Completa.png>)
 
@@ -330,9 +330,9 @@ O progresso de cada personagem fica em `flags.world` do ator (`skillTree`, `skil
 
 ### Testado e aprovado
 
-A versão 1.7.3 foi **testada e aprovada pelo autor dentro do Foundry VTT**, nas versões indicadas acima, antes da publicação.
+Cada versão é **testada pelo autor no Foundry VTT 14 com o sistema D&D 5e 6** logo depois de atualizada.
 
-Além disso, o módulo tem 48 testes automatizados que simulam o Foundry (compras, reembolsos, treino, temporárias, desfazer, importação, limpeza das fichas, tradução e mais). Como em qualquer módulo, recomendamos fazer backup do mundo antes de atualizar. Para rodar os testes com Node.js 22 ou posterior, na pasta que contém `arvore-habilidades`:
+Além disso, o módulo tem 50 testes automatizados que simulam o Foundry (compras, reembolsos, treino, temporárias, desfazer, importação, limpeza das fichas, tradução e mais). Como em qualquer módulo, recomendamos fazer backup do mundo antes de atualizar. Para rodar os testes com Node.js 22 ou posterior, na pasta que contém `arvore-habilidades`:
 
 ```sh
 node arvore-habilidades/tests/regression.mjs
@@ -395,4 +395,4 @@ Copyright © 2026 Daphenius.
 
 Highlights: custom resources with renamable cost fields, multi-level abilities, requirements (abilities, level, class, race, items, cross-tree combos, milestones, exclusive choices, calendar dates), training over long rests, Great Deeds and Mythic Points, locked trees (deed, item, level, class or date), temporary abilities, shared abilities across trees, a GM Table with group rewards and undo, a tree validator and statistics, a chat notice when new abilities become available, player planning and refunds, a sheet tab (Tidy 5e supported), six color themes, and an English interface when Foundry is not set to Portuguese.
 
-Version 1.7.3 was tested and approved by the author in Foundry VTT before release. Install from Foundry with the manifest URL `https://github.com/Daphenius/arvore-habilidades/releases/latest/download/module.json` (or extract the release ZIP into `Data/modules/arvore-habilidades`), enable it, and open it with the toolbar button or **Shift+K**. A quick guide appears the first time; the **?** button opens it again. Issues and suggestions: [GitHub Issues](https://github.com/Daphenius/arvore-habilidades/issues). Licensed under MIT.
+Every version is tested by the author in Foundry VTT 14 with the D&D 5e 6 system right after it is updated. Install from Foundry with the manifest URL `https://github.com/Daphenius/arvore-habilidades/releases/latest/download/module.json` (or extract the release ZIP into `Data/modules/arvore-habilidades`), enable it, and open it with the toolbar button or **Shift+K**. A quick guide appears the first time; the **?** button opens it again. Issues and suggestions: [GitHub Issues](https://github.com/Daphenius/arvore-habilidades/issues). Licensed under MIT.
