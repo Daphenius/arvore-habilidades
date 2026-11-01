@@ -4,9 +4,9 @@
 //  temporária, guarda como cada personagem estava. "Desfazer" na Mesa volta.
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { L, isEnglish } from "./i18n.js?v=1.7.8";
-import { SCOPE, clone, esc, getData, getProp, setData, stFlag, uid, whisperOwners, invalidateTrees } from "./core.js?v=1.7.8";
-import { DialogV2 } from "./ui-kit.js?v=1.7.8";
+import { L, isEnglish } from "./i18n.js?v=1.7.9";
+import { SCOPE, clone, esc, getData, getProp, setData, stFlag, uid, whisperOwners, invalidateTrees } from "./core.js?v=1.7.9";
+import { DialogV2 } from "./ui-kit.js?v=1.7.9";
 
 // só as chaves deste módulo dentro de flags.world (outros módulos também usam "world")
 const OUR_KEYS = ["skillTree", "skillRanks", "skillLog", "skillReq", "skillTraining", "milestones", "skillPoints", "mythic", "skillTemp", "skillAvail", "stRes", "lotd"];

@@ -2,7 +2,7 @@
   "id": "arvore-habilidades",
   "title": "Árvore da Mesa",
   "description": "Árvores de habilidades visuais para D&D 5e: o mestre monta a árvore num mapa e os jogadores compram habilidades com Pontos de Habilidade, XP, Ouro ou recursos personalizados. Requisitos, níveis, treino, Grandes Feitos, árvores bloqueadas, habilidades temporárias e compartilhadas, Mesa do mestre com desfazer, aba na ficha, temas e interface em português ou inglês.",
-  "version": "1.7.8",
+  "version": "1.7.9",
   "authors": [
     {
       "name": "Daphenius",
@@ -11,7 +11,7 @@
   ],
   "url": "https://github.com/Daphenius/arvore-habilidades",
   "manifest": "https://github.com/Daphenius/arvore-habilidades/releases/latest/download/module.json",
-  "download": "https://github.com/Daphenius/arvore-habilidades/releases/download/v1.7.8/arvore-habilidades.zip",
+  "download": "https://github.com/Daphenius/arvore-habilidades/releases/download/v1.7.9/arvore-habilidades.zip",
   "license": "https://github.com/Daphenius/arvore-habilidades/blob/main/LICENSE",
   "readme": "https://github.com/Daphenius/arvore-habilidades/blob/main/README.md",
   "changelog": "https://github.com/Daphenius/arvore-habilidades/blob/main/CHANGELOG.md",

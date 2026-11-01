@@ -1242,5 +1242,9 @@ export const EN = {
 "Ainda não disponível": "Not available yet",
 "Treinar habilidade": "Train ability",
 "Clique em <b>Treinar</b>: o custo é pago agora.": "Click <b>Train</b>: the cost is paid now.",
-"Treinar</b>: o custo é pago agora.": "Train</b>: the cost is paid now."
+"Treinar</b>: o custo é pago agora.": "Train</b>: the cost is paid now.",
+"Multiplicar": "Multiply",
+"Substituir": "Override",
+"Aumentar até (maior valor)": "Upgrade (higher value)",
+"Reduzir até (menor valor)": "Downgrade (lower value)"
 };

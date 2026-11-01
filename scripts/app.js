@@ -3,7 +3,7 @@
 //  Módulo Foundry VTT V14, sistema dnd5e 6
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { L } from "./i18n.js?v=1.7.8";
+import { L } from "./i18n.js?v=1.7.9";
 import {
   ABILITIES, ACTIVATIONS, ApplicationV2, CFG, CHANGE_TYPES, DAMAGE_TYPES, DEFAULT_TYPE, DRAW_COLORS, DUR_UNITS,
   DialogV2 as DialogBase, FEAT_KINDS, FILTERS, FP, KEY_HINTS, K_FEATS, K_LOG, K_MILES, K_MYTH, K_RANKS, K_REQ,
@@ -18,25 +18,25 @@ import {
   setData, skillAvail, skillEarned, stFlag, systemType, topoNodes, trainingOf, treeHasMythic, uid, unlockedOf,
   whisperOwners, withRank, wouldCycle,
   K_TEMP, tempsOf, tempOf, tempText, grantTemp, endTemp, today, dateText, calApi, syncShared, sharedCopies
-} from "./core.js?v=1.7.8";
-import { SaveQueue } from "./persistence.js?v=1.7.8";
-import { validateTrees, remapTree } from "./validation.js?v=1.7.8";
-import { actorOperation } from "./operations.js?v=1.7.8";
-import { DialogV2, charCard, whoSub, whoTools, wireWho } from "./ui-kit.js?v=1.7.8";
-import { MixCanvas } from "./app-canvas.js?v=1.7.8";
-import { MixPanel } from "./app-panel.js?v=1.7.8";
-import { MixEditor } from "./app-editor.js?v=1.7.8";
-import { MixDialogs } from "./app-dialogs.js?v=1.7.8";
-import { MixIo } from "./app-io.js?v=1.7.8";
-import { MixActions } from "./app-actions.js?v=1.7.8";
-import { MixUndo } from "./app-undo.js?v=1.7.8";
-import { MixTools } from "./app-tools.js?v=1.7.8";
-import { MixWelcome } from "./app-welcome.js?v=1.7.8";
+} from "./core.js?v=1.7.9";
+import { SaveQueue } from "./persistence.js?v=1.7.9";
+import { validateTrees, remapTree } from "./validation.js?v=1.7.9";
+import { actorOperation } from "./operations.js?v=1.7.9";
+import { DialogV2, charCard, whoSub, whoTools, wireWho } from "./ui-kit.js?v=1.7.9";
+import { MixCanvas } from "./app-canvas.js?v=1.7.9";
+import { MixPanel } from "./app-panel.js?v=1.7.9";
+import { MixEditor } from "./app-editor.js?v=1.7.9";
+import { MixDialogs } from "./app-dialogs.js?v=1.7.9";
+import { MixIo } from "./app-io.js?v=1.7.9";
+import { MixActions } from "./app-actions.js?v=1.7.9";
+import { MixUndo } from "./app-undo.js?v=1.7.9";
+import { MixTools } from "./app-tools.js?v=1.7.9";
+import { MixWelcome } from "./app-welcome.js?v=1.7.9";
 
 
 
 // ───────────────────────── Aplicação ─────────────────────────
-export const APP_VERSION = "1.7.8";
+export const APP_VERSION = "1.7.9";
 
 export class ArvoreHabilidades extends ApplicationV2 {
   static DEFAULT_OPTIONS = {

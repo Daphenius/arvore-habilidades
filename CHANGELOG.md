@@ -1,5 +1,11 @@
 # Histórico de versões — Árvore da Mesa
 
+## 1.7.9
+
+- **Tipos de efeito corrigidos no Foundry 14:** o Foundry 14 deixou de listar os tipos básicos (Adicionar, Multiplicar, Substituir, Aumentar até, Reduzir até, Personalizado) junto com os extras. Por isso, o menu de tipo no editor de efeitos mostrava só os extras (Bonus, Advantage Mode, Roll Maximum/Minimum e o do Automated Conditions 5e), e um efeito novo podia ficar salvo com o tipo errado. Agora os tipos básicos voltam a aparecer primeiro, e os extras continuam disponíveis no fim da lista.
+- Sumiu o aviso "Árvore da Mesa | não encontrei o tipo 'Adicionar'" no console.
+- **Confira suas árvores:** se você criou ou editou efeitos depois de atualizar para o Foundry 14, abra o editor e veja se o tipo de cada efeito está certo (por exemplo, "Adicionar" para +1 na CA).
+
 ## 1.7.8
 
 - **Idioma corrigido:** com o Foundry em inglês, a Árvore agora aparece em inglês. Antes, ela lia o idioma cedo demais, quando o Foundry ainda informava o idioma padrão do servidor (definido na tela de Configuração), e ficava em português mesmo com o usuário em inglês.

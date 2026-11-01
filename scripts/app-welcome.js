@@ -3,9 +3,9 @@
 //  Aparece na primeira vez que cada pessoa abre a janela; o botão "?" reabre.
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { L } from "./i18n.js?v=1.7.8";
-import { MOD } from "./core.js?v=1.7.8";
-import { DialogV2 } from "./ui-kit.js?v=1.7.8";
+import { L } from "./i18n.js?v=1.7.9";
+import { MOD } from "./core.js?v=1.7.9";
+import { DialogV2 } from "./ui-kit.js?v=1.7.9";
 
 const gmSteps = () => [
   { icon: "fa-sitemap", title: L("Bem-vindo à Árvore da Mesa"), body: L("Aqui você monta árvores de habilidades para os personagens comprarem com Pontos de Habilidade, XP, Ouro ou recursos que você mesmo cria. Em cima ficam as <b>seções</b>, a <b>Skill Tree</b> aberta e o <b>personagem</b> que você está vendo.") },

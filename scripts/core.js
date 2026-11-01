@@ -1,5 +1,5 @@
-import { L, isEnglish } from "./i18n.js?v=1.7.8";
-import { actorOperation } from "./operations.js?v=1.7.8";
+import { L, isEnglish } from "./i18n.js?v=1.7.9";
+import { actorOperation } from "./operations.js?v=1.7.9";
 const INTERNAL = Symbol("skill-tree-operation");
 // ═══════════════════════════════════════════════════════════════════════════
 //  Árvore da Mesa — núcleo: dados, regras, ficha e automações
@@ -9,7 +9,7 @@ const INTERNAL = Symbol("skill-tree-operation");
 // Os dados dos personagens ficam em flags.{SCOPE} ("world") — o mesmo da macro antiga,
 // para manter todo o progresso já existente.
 export const MOD = "arvore-habilidades";
-export const VERSION = "1.7.8"; // tem que bater com o module.json
+export const VERSION = "1.7.9"; // tem que bater com o module.json
 // Registro compartilhado entre os arquivos (janela aberta, área de transferência…)
 export const ST = { app: null, open: null, openApp: null, session: null, catalog: null, clipboard: null, synBusy: false, tidy: false };
 
@@ -59,8 +59,20 @@ export async function saveCfg(cfg) {
 
 // ───────────────────────── listas de opções ─────────────────────────
 export let CHANGE_TYPES = [];
-export const computeChangeTypes = () => Object.entries(CONFIG.ActiveEffect.changeTypes ?? {})
-  .map(([k, v]) => ({ value: k, label: game.i18n.localize(v?.label ?? k) }));
+// No Foundry 14, CONFIG.ActiveEffect.changeTypes só traz os tipos EXTRAS (do sistema e de módulos,
+// como "dnd5e.bonus" ou o do Automated Conditions 5e). Os tipos básicos são do próprio Foundry e
+// não aparecem ali, então entram sempre primeiro na lista.
+export const CORE_CHANGE_TYPES = [
+  { value: "add", label: "Adicionar" }, { value: "multiply", label: "Multiplicar" },
+  { value: "override", label: "Substituir" }, { value: "upgrade", label: "Aumentar até (maior valor)" },
+  { value: "downgrade", label: "Reduzir até (menor valor)" }, { value: "custom", label: "Personalizado" }
+];
+export const computeChangeTypes = () => {
+  const extras = Object.entries(CONFIG.ActiveEffect?.changeTypes ?? {})
+    .map(([k, v]) => ({ value: k, label: game.i18n.localize(v?.label ?? k) }));
+  const base = CORE_CHANGE_TYPES.filter(c => !extras.some(e => e.value === c.value)).map(c => ({ value: c.value, label: L(c.label) }));
+  return [...base, ...extras];
+};
 // Guardamos sempre um nome "canônico" (add, override…) e traduzimos para o tipo do sistema ao criar o efeito.
 // LEGACY_MODES converte os números de modo salvos por versões antigas (Foundry 13).
 export const LEGACY_MODES = { 0: "custom", 1: "multiply", 2: "add", 3: "downgrade", 4: "upgrade", 5: "override" };
@@ -72,6 +84,7 @@ export function canonType(v) {
   const s = String(v ?? "");
   if (TYPE_RX[s] || s === "add") return s;
   if (s in LEGACY_MODES) return LEGACY_MODES[s];
+  if (s.includes(".") && CHANGE_TYPES.some(c => c.value === s)) return s; // tipo extra de sistema/módulo
   const ct = CHANGE_TYPES.find(c => c.value === s);
   for (const [k, rx] of Object.entries(TYPE_RX)) if (rx.test(s) || (ct && rx.test(ct.label))) return k;
   return s;
@@ -140,7 +153,7 @@ export function initCore() {
   DAMAGE_TYPES = Object.entries(D5.damageTypes ?? {}).map(([k, v]) => ({ value: k, label: lbl(v) || k }))
     .concat(Object.entries(D5.healingTypes ?? {}).map(([k, v]) => ({ value: k, label: lbl(v) || k })));
   reloadCfg();
-  if (!CHANGE_TYPES.some(c => canonType(c.value) === "add")) console.warn(L("Árvore da Mesa | não encontrei o tipo 'Adicionar' entre"), CHANGE_TYPES);
+  if (!CHANGE_TYPES.some(c => c.value === "add")) console.warn(L("Árvore da Mesa | não encontrei o tipo 'Adicionar' entre"), CHANGE_TYPES);
 }
 export const FEAT_KINDS = [
   { value: "utility", label: L("Habilidade / Transformação") },
@@ -271,7 +284,7 @@ export const playerSees = (t, a) => !!a && canSee(t, a.id) && !(t.lockHide && tr
 export function normalizeNode(n) {
   const nn = { ...nodeDefaults(), ...n };
   for (const k of ["items", "changes", "features", "consume", "reqClasses", "reqItems", "rankDescs", "reqNodes"]) nn[k] = Array.isArray(nn[k]) ? nn[k] : [];
-  // 1.7.8: poções e digestão saíram do módulo
+  // 1.7.9: poções e digestão saíram do módulo
   for (const k of ["seq", "digestReq", "potionDC", "sanLoss", "ingredients"]) delete nn[k];
   nn.extra = nn.extra && typeof nn.extra === "object" && !Array.isArray(nn.extra) ? Object.fromEntries(Object.entries(nn.extra).map(([k, v]) => [k, Math.max(0, Number(v) || 0)])) : {};
   // versão antiga: uma única habilidade na ficha
@@ -294,7 +307,7 @@ export function normalizeTree(t) {
   // 1.3.1: "Peças de Ouro" virou "Ouro", que também aceita Platina (mesma escala em PO)
   if (t.resPath === "system.currency.gp") t.resPath = COINS;
   Object.assign(t, { ...treeDefaults(), ...t });
-  // 1.7.8: árvores do antigo modo Sequências (poções e digestão) viram árvores de pontos comuns
+  // 1.7.9: árvores do antigo modo Sequências (poções e digestão) viram árvores de pontos comuns
   if (t.mode === "sequence") {
     if (!t.section) t.section = "sequences";
     t.mode = "skill"; t.rules = "custom";
