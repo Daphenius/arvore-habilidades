@@ -1,5 +1,5 @@
-import { L, isEnglish } from "./i18n.js?v=1.7.9";
-import { actorOperation } from "./operations.js?v=1.7.9";
+import { L, isEnglish } from "./i18n.js?v=1.7.10";
+import { actorOperation } from "./operations.js?v=1.7.10";
 const INTERNAL = Symbol("skill-tree-operation");
 // ═══════════════════════════════════════════════════════════════════════════
 //  Árvore da Mesa — núcleo: dados, regras, ficha e automações
@@ -9,9 +9,9 @@ const INTERNAL = Symbol("skill-tree-operation");
 // Os dados dos personagens ficam em flags.{SCOPE} ("world") — o mesmo da macro antiga,
 // para manter todo o progresso já existente.
 export const MOD = "arvore-habilidades";
-export const VERSION = "1.7.9"; // tem que bater com o module.json
+export const VERSION = "1.7.10"; // tem que bater com o module.json
 // Registro compartilhado entre os arquivos (janela aberta, área de transferência…)
-export const ST = { app: null, open: null, openApp: null, session: null, catalog: null, clipboard: null, synBusy: false, tidy: false };
+export const ST = { app: null, open: null, openApp: null, session: null, catalog: null, clipboard: null, tidy: false };
 
 export const SCOPE = "world";
 export const R = 32; // raio base da habilidade em px
@@ -25,6 +25,26 @@ export const uid = () => foundry.utils.randomID(8);
 export const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 export const saveFile = foundry.utils.saveDataToFile;
 export const isTyping = el => !!el?.closest?.("input, textarea, select, [contenteditable]");
+// Limpa HTML que veio de descrições (digitadas ou importadas de JSON) antes de ir para a tela:
+// tira scripts, iframes e afins, atributos on* e links/imagens com "javascript:".
+export function sanitizarHTML(html) {
+  const s = String(html ?? "");
+  if (!s) return "";
+  if (typeof DOMParser === "undefined") return esc(s);
+  const doc = new DOMParser().parseFromString(`<body>${s}</body>`, "text/html");
+  doc.querySelectorAll("script, iframe, object, embed, style, link, meta, base, form").forEach(el => el.remove());
+  for (const el of doc.body.querySelectorAll("*")) {
+    for (const at of [...el.attributes]) {
+      const nome = at.name.toLowerCase(), v = at.value.replace(/[\s\u0000-\u001f]/g, "").toLowerCase();
+      if (nome.startsWith("on") || ((nome === "href" || nome === "src" || nome === "xlink:href" || nome === "action" || nome === "formaction") && (v.startsWith("javascript:") || v.startsWith("vbscript:") || v.startsWith("data:text/html")))) el.removeAttribute(at.name);
+    }
+  }
+  return doc.body.innerHTML;
+}
+// o que cada ação do histórico vira no texto ("fulano desbloqueou X")
+export const LOG_VERBS = () => ({ unlock: L("desbloqueou"), temp: L("recebeu temporária"), grant: L("recebeu do mestre"), refund: L("reembolsou"), deny: L("teve recusado"), reset: L("resetou"), train: L("começou a treinar"), orphan: L("recebeu de volta os pontos de") });
+// idioma do Foundry para datas (pt-BR, en…)
+export const dateLang = () => game.i18n?.lang || "pt-BR";
 
 // ───────────────────────── chaves no ator ─────────────────────────
 export const K_UNLOCK = id => `flags.${SCOPE}.skillTree.${id}`;
@@ -215,7 +235,7 @@ export function nodeExtras(t, n) {
   for (const r of extraRes(t)) { const v = Number(n?.extra?.[r.id]) || 0; if (v > 0) out[resPath(t, r)] = (out[resPath(t, r)] ?? 0) + v; }
   return out;
 }
-export const extraName = (t, path) => extraRes(t).find(r => resPath(t, r) === path)?.name ?? "recurso";
+export const extraName = (t, path) => extraRes(t).find(r => resPath(t, r) === path)?.name ?? L("recurso");
 export function addExtras(upd, a, ex, sign = 1, pct = 1) {
   for (const [p, v0] of Object.entries(ex ?? {})) {
     const v = sign > 0 ? Math.floor((Number(v0) || 0) * pct) : (Number(v0) || 0);
@@ -475,7 +495,7 @@ export function treeLock(a, t, trees = getTrees()) {
   const name = String(t.lockItem ?? "").trim();
   if (!name) return null;
   if (a && countItem(a, { name }) > 0) return null;
-  return `Item: ${name}`;
+  return L`Item: ${name}`;
 }
 // árvores que um Grande Feito libera
 export const treesOpenedBy = (featId, trees = getTrees()) => trees.filter(t => t.lockKind === "feat" && t.lockFeat === featId);
@@ -670,7 +690,7 @@ export function changeLabel(c) {
   if (key === "system.traits.size") val = lbl(D5.actorSizes?.[v]) || v;
   if (ty === "add" || ty === "2") return `${name} ${/^[+-]/.test(v) ? "" : "+"}${val}`;
   if (ty === "subtract") return `${name} −${val}`;
-  if (ty === "override" || ty === "5") return `${name} vira ${val}`;
+  if (ty === "override" || ty === "5") return L`${name} vira ${val}`;
   if (ty === "multiply" || ty === "1") return `${name} ×${val}`;
   if (ty === "upgrade" || ty === "4") return L`${name} no mínimo ${val}`;
   if (ty === "downgrade" || ty === "3") return L`${name} no máximo ${val}`;
@@ -816,7 +836,7 @@ export function featureSummary(f) {
 
 // Texto de regras sem ambiguidade, gerado a partir da habilidade
 export const abLabel = k => ABILITIES.find(a => a.value === k)?.label ?? k;
-export const unitLabel = u => ({ ft: L("pés"), m: "m", touch: "toque", self: "pessoal" })[u] ?? u;
+export const unitLabel = u => ({ ft: L("pés"), m: "m", touch: L("toque"), self: L("pessoal") })[u] ?? u;
 export function dcText(f) {
   const m = String(f.saveDC ?? "").match(/@abilities\.(\w+)\.mod/);
   if (m) return L`CD 8 + proficiência + mod. de ${abLabel(m[1])}`;
@@ -825,13 +845,13 @@ export function dcText(f) {
 export function featureRules(f, extra = "") {
   const OUT = [];
   const act = f.kind === "none" ? L("Passiva") : (ACTIVATIONS.find(x => x.value === f.activation)?.label || L("Sem ação"));
-  const usos = f.kind === "none" ? "" : f.uses ? L`${f.uses} uso(s) por ${RECOVERY.find(x => x.value === f.recovery)?.label ?? "descanso"}` : L("à vontade");
-  const alc = f.range ? `alcance ${f.range} ${unitLabel(f.rangeUnits)}` : (f.rangeUnits === "touch" ? "toque" : "");
-  const dur = f.durValue ? `dura ${f.durValue} ${DUR_UNITS.find(x => x.value === f.durUnits)?.label ?? ""}` : "";
+  const usos = f.kind === "none" ? "" : f.uses ? L`${f.uses} uso(s) por ${RECOVERY.find(x => x.value === f.recovery)?.label ?? L("descanso")}` : L("à vontade");
+  const alc = f.range ? L`alcance ${f.range} ${unitLabel(f.rangeUnits)}` : (f.rangeUnits === "touch" ? L("toque") : "");
+  const dur = f.durValue ? L`dura ${f.durValue} ${DUR_UNITS.find(x => x.value === f.durUnits)?.label ?? ""}` : "";
   OUT.push([act, usos, alc, dur].filter(Boolean).join(" · ") + ".");
   const dano = (fm, tp) => L`${fm} de dano ${(DAMAGE_TYPES.find(d => d.value === tp)?.label ?? tp ?? "").toLowerCase()}`.trim();
-  if (f.kind === "attack") OUT.push(L`Faça um ataque ${f.attackType === "ranged" ? L("à distância") : L("corpo a corpo")} ${f.classification === "spell" ? L("mágico") : f.classification === "unarmed" ? "desarmado" : L("com arma")}${f.ability ? ` usando ${f.ability === "spellcasting" ? L("o atributo de conjuração") : abLabel(f.ability)}` : ""}${f.toHit ? L` (+${f.toHit} no acerto)` : ""}. Se acertar: ${dano(f.formula, f.damageType)}.`);
-  if (f.kind === "save") OUT.push(L`${Number(f.targets) > 1 ? L`Até ${f.targets} alvos fazem` : L("O alvo faz")} um TR de ${abLabel(f.saveAbility)} (${dcText(f)}). Falha: ${f.formula ? dano(f.formula, f.damageType) : L("sofre o efeito")}${f.onSave === "half" ? L("; sucesso: metade do dano") : f.onSave === "none" ? "; sucesso: nada acontece" : "; sucesso: dano total"}.`);
+  if (f.kind === "attack") OUT.push(L`Faça um ataque ${f.attackType === "ranged" ? L("à distância") : L("corpo a corpo")} ${f.classification === "spell" ? L("mágico") : f.classification === "unarmed" ? L("desarmado") : L("com arma")}${f.ability ? L` usando ${f.ability === "spellcasting" ? L("o atributo de conjuração") : abLabel(f.ability)}` : ""}${f.toHit ? L` (+${f.toHit} no acerto)` : ""}. Se acertar: ${dano(f.formula, f.damageType)}.`);
+  if (f.kind === "save") OUT.push(L`${Number(f.targets) > 1 ? L`Até ${f.targets} alvos fazem` : L("O alvo faz")} um TR de ${abLabel(f.saveAbility)} (${dcText(f)}). Falha: ${f.formula ? dano(f.formula, f.damageType) : L("sofre o efeito")}${f.onSave === "half" ? L("; sucesso: metade do dano") : f.onSave === "none" ? L("; sucesso: nada acontece") : L("; sucesso: dano total")}.`);
   if (f.kind === "heal") OUT.push(`${Number(f.targets) > 1 ? L`Até ${f.targets} criaturas recebem` : L("Uma criatura recebe")} ${f.healType === "temphp" ? L`${f.formula} PV temporários` : L`${f.formula} PV de cura`}.`);
   const ch = (f.changes ?? []).filter(c => c.key);
   if (ch.length) OUT.push(L`Enquanto ativo: ${ch.map(changeLabel).join("; ")}.${f.kind === "utility" && f.autoApply !== false ? L(" O efeito entra sozinho ao usar e sai quando a duração acaba.") : L(" Aplique o efeito pelo botão do cartão no chat.")}`);
@@ -942,7 +962,8 @@ export async function doUnlock(a, t, n, options = {}, token) {
   if (result) await checkSynergies(a, t, options.quiet);
   return result;
 }
-async function unlock(a, t, n, { free = false, paid = null, quiet = false } = {}) {
+// temp: registro de habilidade temporária (grantTemp) — entra na mesma gravação da compra
+async function unlock(a, t, n, { free = false, paid = null, quiet = false, temp = null } = {}) {
   if (!a || !t || !n) return false;
   const st = nodeState(a, t, n);
   if (st.key === "training" && !paid) { ui.notifications.warn(L`"${n.name}" ainda está em treino.`); return false; }
@@ -974,13 +995,15 @@ async function unlock(a, t, n, { free = false, paid = null, quiet = false } = {}
   const newRank = st.rank + 1;
   const ranks = ranksOf(a, t).filter(r => r.id !== n.id);
   const entry = rankEntry(a, t, n, un);
-  entry.r = newRank; entry.paid = [...(entry.paid ?? []), cost]; entry.paidX = [...(entry.paidX ?? []), { gp, pp, ex, res, myth: isMythic(n) }];
+  // o pagamento (grátis) de uma temporária fica marcado com ela: é ele que sai quando expirar
+  entry.r = newRank; entry.paid = [...(entry.paid ?? []), cost]; entry.paidX = [...(entry.paidX ?? []), { gp, pp, ex, res, myth: isMythic(n), ...(temp ? { temp: temp.id } : {}) }];
   ranks.push(entry);
   const upd = {
     [K_UNLOCK(t.id)]: [...new Set([...un, n.id])],
     [K_RANKS(t.id)]: ranks,
-    [K_LOG]: addLog(a, { tree: t.id, treeName: t.name, node: n.id, nodeName: n.name, act: free && !paid ? "grant" : "unlock", rank: newRank, cost })
+    [K_LOG]: addLog(a, { tree: t.id, treeName: t.name, node: n.id, nodeName: n.name, act: temp ? "temp" : free && !paid ? "grant" : "unlock", rank: newRank, cost })
   };
+  if (temp) upd[K_TEMP] = [...tempsOf(a), temp];
   if (cost && !paid) addPay(upd, a, t, n, -cost);
   if (!free) {
     if (gp) addCoins(upd, a, -gp);
@@ -1095,7 +1118,7 @@ async function refund(a, t, n, { quiet = false } = {}) {
   if (entry.r === 0 && n.replaces) {
     for (const p of parentsOf(t, n.id)) if (un.includes(p)) { const pn = nodeById(t, p); await grant(a, t, pn, rankOf(a, t, pn)); }
   }
-  if (!quiet) await chat(a, `<b>${esc(a.name)}</b> ${entry.r > 0 ? L`reduziu <b>${esc(n.name)}</b> para o nível ${entry.r}` : `reembolsou <b>${esc(n.name)}</b>`} <small>(+${[back ? `${back} ${(bx.myth ?? isMythic(n)) ? L("Pontos Míticos") : t.resLabel}` : "", backGp ? `${backGp} PO` : "", backPp ? `${backPp} PL` : ""].filter(Boolean).join(", ") || "nada"})</small>`);
+  if (!quiet) await chat(a, `<b>${esc(a.name)}</b> ${entry.r > 0 ? L`reduziu <b>${esc(n.name)}</b> para o nível ${entry.r}` : L`reembolsou <b>${esc(n.name)}</b>`} <small>(+${[back ? `${back} ${(bx.myth ?? isMythic(n)) ? L("Pontos Míticos") : t.resLabel}` : "", backGp ? `${backGp} PO` : "", backPp ? `${backPp} PL` : ""].filter(Boolean).join(", ") || L("nada")})</small>`);
   return true;
 }
 
@@ -1190,7 +1213,7 @@ export async function fixOrphans(actors = null, { trees = null, quiet = false } 
     addExtras(upd, a, r.ex, 1);
     for (const [d, v] of r.other) addResDesc(upd, a, d, v);
     const parts = [r.skillBack ? L`${r.skillBack} Pontos de Habilidade` : "", r.myth ? L`${r.myth} Pontos Míticos` : "",
-      ...r.other.map(([d, v]) => `${v} ${d.k === "coins" ? L("Ouro") : d.label || L("Pontos")}`), r.gp ? `${r.gp} PO` : "", r.pp ? `${r.pp} PL` : "", Object.keys(r.ex).length ? "recursos extras" : ""].filter(Boolean);
+      ...r.other.map(([d, v]) => `${v} ${d.k === "coins" ? L("Ouro") : d.label || L("Pontos")}`), r.gp ? `${r.gp} PO` : "", r.pp ? `${r.pp} PL` : "", Object.keys(r.ex).length ? L("recursos extras") : ""].filter(Boolean);
     upd[K_LOG] = addLog(a, { act: "orphan", nodeName: r.nodes.join(", "), cost: r.skillBack });
     if (r.items.length) await a.deleteEmbeddedDocuments("Item", r.items.filter(id => a.items.has(id)));
     if (r.effects.length) await a.deleteEmbeddedDocuments("ActiveEffect", r.effects.filter(id => a.effects.has(id)));
@@ -1517,10 +1540,10 @@ export function sheetTabHTML(a) {
 
   const miles = milestonesOf(a);
   const log = logOf(a).slice(-5).reverse();
-  const verbo = { unlock: "desbloqueou", temp: L("recebeu temporária"), grant: "recebeu", refund: "reembolsou", deny: "teve recusado", reset: "resetou", train: L("começou a treinar"), orphan: L("recebeu de volta os pontos de") };
+  const verbo = LOG_VERBS();
   return `${top}${cards}
     ${miles.length ? L`<div class="sts-card"><div class="sts-head"><h3>🏆 Marcos</h3></div>${miles.map(m => `<span class="sts-pill blue" style="margin:2px;display:inline-block">${esc(m)}</span>`).join("")}</div>` : ""}
-    ${log.length ? L`<div class="sts-card"><div class="sts-head"><h3>Histórico recente</h3></div>${log.map(e => `<div class="sts-line">• ${new Date(e.at).toLocaleDateString("pt-BR")} — ${verbo[e.act] ?? e.act} <b>${esc(e.nodeName ?? e.treeName ?? "")}</b>${e.rank > 1 ? L` (nível ${e.rank})` : ""}</div>`).join("")}</div>` : ""}`;
+    ${log.length ? L`<div class="sts-card"><div class="sts-head"><h3>Histórico recente</h3></div>${log.map(e => `<div class="sts-line">• ${new Date(e.at).toLocaleDateString(dateLang())} — ${verbo[e.act] ?? e.act} <b>${esc(e.nodeName ?? e.treeName ?? "")}</b>${e.rank > 1 ? L` (nível ${e.rank})` : ""}</div>`).join("")}</div>` : ""}`;
 }
 
 // liga os cliques "Abrir" de um painel da aba
@@ -1606,18 +1629,25 @@ export function addSheetTab(app) {
     } else { item.classList.remove("active"); panel.classList.remove("active"); }
   };
   item.addEventListener("click", ev => { ev.preventDefault(); ev.stopPropagation(); activate(true); });
-  nav.addEventListener("click", ev => {
-    const other = ev.target.closest?.("[data-tab]");
-    if (!other || other === item || !app._stTab) return;
-    activate(false);
-    const tab = other.dataset.tab;
-    setTimeout(() => {
-      if (body.querySelector(":scope > .tab.active")) return;
-      other.classList.add("active");
-      body.querySelector(`:scope > .tab[data-tab="${tab}"]`)?.classList.add("active");
-      if (app.tabGroups) app.tabGroups[other.dataset.group ?? group] = tab;
-    }, 0);
-  }, true);
+  // a ficha é renderizada várias vezes: o ouvinte da barra de abas entra uma vez só e lê
+  // as peças da renderização atual em nav._st (senão acumulava um ouvinte por renderização)
+  nav._st = { app, item, body, group, activate };
+  if (!nav.dataset.stListener) {
+    nav.dataset.stListener = "1";
+    nav.addEventListener("click", ev => {
+      const cur = nav._st; if (!cur) return;
+      const other = ev.target.closest?.("[data-tab]");
+      if (!other || other === cur.item || !cur.app._stTab) return;
+      cur.activate(false);
+      const tab = other.dataset.tab;
+      setTimeout(() => {
+        if (cur.body.querySelector(":scope > .tab.active")) return;
+        other.classList.add("active");
+        cur.body.querySelector(`:scope > .tab[data-tab="${tab}"]`)?.classList.add("active");
+        if (cur.app.tabGroups) cur.app.tabGroups[other.dataset.group ?? cur.group] = tab;
+      }, 0);
+    }, true);
+  }
   bindSheetPanel(panel, a);
   if (app._stTab) activate(true);
 }
@@ -1636,14 +1666,11 @@ export async function grantTemp(a, t, n, { kind = "rests", left = 1, until = nul
   if (!game.user.isGM) throw new Error(L("Esta ação é exclusiva do mestre."));
   const st = nodeState(a, t, n);
   if (st.rank >= st.max) { ui.notifications.warn(L`"${n.name}" já está no nível máximo.`); return false; }
-  const ok = await doUnlock(a, t, n, { free: true, quiet: true });
-  if (!ok) return false;
   const e = { id: uid(), tree: t.id, node: n.id, kind, left: Math.max(1, Number(left) || 1), until: until === null ? null : Math.trunc(Number(until)), at: Date.now() };
   if (kind === "date" && (e.until === null || !Number.isFinite(e.until))) e.until = today() + 1;
-  // marca o pagamento (grátis) deste nível como temporário: é ele que sai quando expirar
-  const ranks = ranksOf(a, t), re = ranks.find(r => r.id === n.id);
-  if (re) { re.paidX ??= []; while (re.paidX.length < (re.paid ?? []).length) re.paidX.push({}); re.paidX[re.paidX.length - 1] = { ...(re.paidX.at(-1) ?? {}), temp: e.id }; }
-  await a.update({ [K_RANKS(t.id)]: ranks, [K_TEMP]: [...tempsOf(a), e], [K_LOG]: addLog(a, { tree: t.id, treeName: t.name, node: n.id, nodeName: n.name, act: "temp" }) });
+  // a concessão e a marca de temporária entram numa única gravação, dentro da mesma operação
+  const ok = await doUnlock(a, t, n, { free: true, quiet: true, temp: e }, INTERNAL);
+  if (!ok) return false;
   whisperOwners(a, L`⌛ <b>${esc(a.name)}</b> recebeu <b>${esc(n.name)}</b> temporariamente — ${tempText(e)}.`, "#d2a25e");
   return true;
 }

@@ -3,7 +3,7 @@
 //  Métodos da janela ArvoreHabilidades (copiados para a classe em app.js)
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { L } from "./i18n.js?v=1.7.9";
+import { L } from "./i18n.js?v=1.7.10";
 import {
   ABILITIES, ACTIVATIONS, ApplicationV2, CFG, CHANGE_TYPES, DAMAGE_TYPES, DEFAULT_TYPE, DRAW_COLORS, DUR_UNITS,
   DialogV2 as DialogBase, FEAT_KINDS, FILTERS, FP, KEY_HINTS, K_FEATS, K_LOG, K_MILES, K_MYTH, K_RANKS, K_REQ,
@@ -18,11 +18,12 @@ import {
   setData, skillAvail, skillEarned, stFlag, systemType, topoNodes, trainingOf, treeHasMythic, uid, unlockedOf,
   whisperOwners, withRank, wouldCycle,
   K_TEMP, tempsOf, tempOf, tempText, grantTemp, endTemp, today, dateText, calApi
-} from "./core.js?v=1.7.9";
-import { SaveQueue } from "./persistence.js?v=1.7.9";
-import { validateTrees, remapTree } from "./validation.js?v=1.7.9";
-import { actorOperation } from "./operations.js?v=1.7.9";
-import { DialogV2, charCard, whoSub, whoTools, wireWho, datePicker, readDate, wireDate } from "./ui-kit.js?v=1.7.9";
+} from "./core.js?v=1.7.10";
+import { LOG_VERBS, dateLang, sanitizarHTML } from "./core.js?v=1.7.10";
+import { SaveQueue } from "./persistence.js?v=1.7.10";
+import { validateTrees, remapTree } from "./validation.js?v=1.7.10";
+import { actorOperation } from "./operations.js?v=1.7.10";
+import { DialogV2, charCard, whoSub, whoTools, wireWho, datePicker, readDate, wireDate } from "./ui-kit.js?v=1.7.10";
 
 export class MixPanel {
   // ── reembolso em lote ──
@@ -197,8 +198,8 @@ export class MixPanel {
   historyHTML(a, t, limit = 8) {
     const log = logOf(a).filter(e => !t || e.tree === t.id).slice(-limit).reverse();
     if (!log.length) return L`<div class="st-log" style="opacity:.6">Nada ainda.</div>`;
-    const verbo = { unlock: "desbloqueou", temp: L("recebeu temporária"), grant: L("recebeu do mestre"), refund: "reembolsou", deny: "teve recusado", reset: "resetou", train: L("começou a treinar"), orphan: L("recebeu de volta os pontos de") };
-    return log.map(e => `<div class="st-log">• ${new Date(e.at).toLocaleDateString("pt-BR")} — ${verbo[e.act] ?? e.act} <b>${esc(e.nodeName ?? e.treeName)}</b>${e.rank > 1 ? L` (nível ${e.rank})` : ""}${e.cost ? ` · ${e.cost}` : ""}${!t ? ` <i>(${esc(e.treeName)})</i>` : ""}</div>`).join("");
+    const verbo = LOG_VERBS();
+    return log.map(e => `<div class="st-log">• ${new Date(e.at).toLocaleDateString(dateLang())} — ${verbo[e.act] ?? e.act} <b>${esc(e.nodeName ?? e.treeName)}</b>${e.rank > 1 ? L` (nível ${e.rank})` : ""}${e.cost ? ` · ${e.cost}` : ""}${!t ? ` <i>(${esc(e.treeName)})</i>` : ""}</div>`).join("");
   }
 
   reqListHTML(t) {
@@ -320,7 +321,7 @@ export class MixPanel {
         <div class="st-card"><p style="margin:0">Cumpra os requisitos para revelar esta habilidade.</p></div>`;
     }
     const nr = withRank(n, Math.max(1, st.rank));
-    const desc = nr.desc ? await TE.enrichHTML(nr.desc, { async: true }) : "";
+    const desc = nr.desc ? sanitizarHTML(await TE.enrichHTML(nr.desc)) : "";
     const pending = a && reqsOf(a).find(r => r.tree === t.id && r.node === n.id);
     const trans = a?.effects.find(e => stFlag(e)?.generated && stFlag(e).node === n.id);
     const canRefund = st.rank > 0 && (this.gm || t.refundPlayer) && !n.synergy;
@@ -385,7 +386,7 @@ export class MixPanel {
         }
         if (String(a1.desc ?? "") !== String(a2.desc ?? "") && a2.desc) lines.push([L`${nm}: descrição na ficha`, L("nova descrição")]);
       });
-      const nextDesc = (n.rankDescs?.[st.rank - 1] ?? "").trim() ? await TE.enrichHTML(nxt.desc, { async: true }) : "";
+      const nextDesc = (n.rankDescs?.[st.rank - 1] ?? "").trim() ? sanitizarHTML(await TE.enrichHTML(nxt.desc)) : "";
       if (lines.length || nextDesc) cmp = L`<div class="st-card"><div class="st-card-t"><i class="fas fa-code-compare"></i> Nível ${st.rank} → ${st.rank + 1}</div>${lines.map(([x, y]) => `<div class="st-cmp">${esc(x)} → <b>${esc(y)}</b></div>`).join("")}
         ${nextDesc ? L`<div class="st-sub2" style="margin-top:6px">No nível ${st.rank + 1}:</div><div class="st-desc" style="opacity:.85">${nextDesc}</div>` : ""}</div>`;
     }

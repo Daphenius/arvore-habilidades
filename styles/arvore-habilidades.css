@@ -231,7 +231,7 @@
 .st-legend .st-card-t i{display:inline;width:auto;height:auto;border:none;border-radius:0}
 
 /* versão do CSS: o módulo confere ao carregar */
-:root{--st-css-version:"1.7.5"}
+:root{--st-css-version:"1.7.10"}
 
 /* Seções personalizadas podem ocupar mais de uma linha. */
 .st-catwrap .st-cats{flex-wrap:wrap;max-width:620px}

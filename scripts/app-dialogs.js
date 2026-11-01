@@ -3,7 +3,7 @@
 //  Métodos da janela ArvoreHabilidades (copiados para a classe em app.js)
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { L } from "./i18n.js?v=1.7.9";
+import { L } from "./i18n.js?v=1.7.10";
 import {
   ABILITIES, ACTIVATIONS, ApplicationV2, CFG, CHANGE_TYPES, DAMAGE_TYPES, DEFAULT_TYPE, DRAW_COLORS, DUR_UNITS,
   DialogV2 as DialogBase, FEAT_KINDS, FILTERS, FP, KEY_HINTS, K_FEATS, K_LOG, K_MILES, K_MYTH, K_RANKS, K_REQ,
@@ -18,11 +18,12 @@ import {
   setData, skillAvail, skillEarned, stFlag, systemType, topoNodes, trainingOf, treeHasMythic, uid, unlockedOf,
   whisperOwners, withRank, wouldCycle,
   K_TEMP, tempsOf, tempOf, tempText, grantTemp, endTemp, today, dateText, calApi, syncShared, sharedCopies, SHARED_SKIP, resDesc, addResDesc, payBack, longRest, longRestAll, restingActors
-} from "./core.js?v=1.7.9";
-import { SaveQueue } from "./persistence.js?v=1.7.9";
-import { validateTrees, remapTree } from "./validation.js?v=1.7.9";
-import { actorOperation } from "./operations.js?v=1.7.9";
-import { DialogV2, charCard, whoSub, whoTools, wireWho, datePicker, readDate, wireDate } from "./ui-kit.js?v=1.7.9";
+} from "./core.js?v=1.7.10";
+import { dateLang } from "./core.js?v=1.7.10";
+import { SaveQueue } from "./persistence.js?v=1.7.10";
+import { validateTrees, remapTree } from "./validation.js?v=1.7.10";
+import { actorOperation } from "./operations.js?v=1.7.10";
+import { DialogV2, charCard, whoSub, whoTools, wireWho, datePicker, readDate, wireDate } from "./ui-kit.js?v=1.7.10";
 
 export class MixDialogs {
   // Exclui a seção atual. Árvores dentro dela são movidas para outra seção ou excluídas junto.
@@ -637,7 +638,7 @@ export class MixDialogs {
     const result = await DialogV2.prompt({
       window: { title: L`Atribuir "${t.name}"`, icon: "fas fa-user-plus" }, position: { width: 560 },
       content: `<div class="st-c">
-        <p class="st-c-lead">${L("Marque quem recebe esta Skill Tree. Só eles a verão quando abrirem a macro.")}</p>
+        <p class="st-c-lead">${L("Marque quem recebe esta Skill Tree. Só eles a verão quando abrirem a árvore.")}</p>
         ${whoTools(chars.length > 6)}
         <div class="st-who-grid">${chars.map(a => charCard(a, { checked: t.assigned.includes(a.id), sub: whoSub(a) })).join("")}</div>
         <label class="st-c-tog"><input type="checkbox" name="avisar" checked><span class="st-c-sw"></span><span><b>${L("Avisar os jogadores no chat")}</b></span></label>
@@ -669,8 +670,8 @@ export class MixDialogs {
   journalText(since, format = "md") {
     const B = x => format === "md" ? `**${x}**` : `<b>${esc(x)}</b>`;
     const S = this.sessionInfo();
-    const data = new Date(since || Date.now()).toLocaleDateString("pt-BR");
-    const verbo = { unlock: L("Desbloqueou"), temp: L("Recebeu temporária"), feat: L("✦ Grande Feito:"), grant: L("Recebeu do mestre"), refund: L("Reembolsou"), reset: L("Resetou a árvore"), train: L("Começou a treinar"), orphan: L("↺ Pontos devolvidos de"), deny: L("Pedido recusado:"), mile: L("🏆 Marco:"), feat: L("✦ Grande Feito:"), reward: L("🎁 Recebeu"), level: L("⬆ Subiu para o nível") };
+    const data = new Date(since || Date.now()).toLocaleDateString(dateLang());
+    const verbo = { unlock: L("Desbloqueou"), temp: L("Recebeu temporária"), feat: L("✦ Grande Feito:"), grant: L("Recebeu do mestre"), refund: L("Reembolsou"), reset: L("Resetou a árvore"), train: L("Começou a treinar"), orphan: L("↺ Pontos devolvidos de"), deny: L("Pedido recusado:"), mile: L("🏆 Marco:"), reward: L("🎁 Recebeu"), level: L("⬆ Subiu para o nível") };
     const out = [];
     for (const a of playerCharacters()) {
       const linhas = [];
@@ -693,7 +694,7 @@ export class MixDialogs {
     const md = this.journalText(since, "md");
     await DialogV2.prompt({
       window: { title: L`📜 Diário — Sessão ${S.n}` }, position: { width: 560 },
-      content: L`<p class="hint">${S.start ? L`Desde ${new Date(S.start).toLocaleString("pt-BR")}.` : L("Nenhuma sessão iniciada: mostrando as últimas 12 horas.")} Texto pronto para colar no Discord.</p>
+      content: L`<p class="hint">${S.start ? L`Desde ${new Date(S.start).toLocaleString(dateLang())}.` : L("Nenhuma sessão iniciada: mostrando as últimas 12 horas.")} Texto pronto para colar no Discord.</p>
         <textarea data-journal rows="16" style="width:100%;font-family:monospace;font-size:12px">${esc(md)}</textarea>
         <div style="display:flex;gap:6px;margin-top:6px">
           <button type="button" data-j="copy" style="flex:1"><i class="fas fa-copy"></i> Copiar</button>
@@ -801,7 +802,7 @@ export class MixDialogs {
     ChatMessage.create({ speaker: { alias: L("Grande Feito") }, content: L`<div style="border:2px solid #e000ff;border-radius:10px;padding:10px;background:radial-gradient(circle at 50% 20%,#e000ff44,#1d2029 70%);color:#eee;text-align:center">
       <div style="font-size:10px;letter-spacing:4px;color:#f5b8ff">✦ GRANDE FEITO ✦</div>
       <div style="font-size:17px;font-weight:bold;margin:6px 0;color:#f5b8ff">${esc(name)}</div>
-      <div>${esc(given.map(x => x.name).join(", "))} ${given.length > 1 ? "recebem" : "recebe"} <b>${value} Ponto(s) Mítico(s)</b></div>
+      <div>${esc(given.map(x => x.name).join(", "))} ${given.length > 1 ? L("recebem") : L("recebe")} <b>${value} Ponto(s) Mítico(s)</b></div>
       ${opens.length ? L`<div style="margin-top:6px">🔓 Libera a Skill Tree <b>${esc(opens.join(", "))}</b></div>` : ""}</div>` });
     this.render();
     return given;

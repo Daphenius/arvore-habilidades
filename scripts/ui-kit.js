@@ -2,7 +2,7 @@
 //  Árvore da Mesa — peças de interface compartilhadas pelas janelas
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { L } from "./i18n.js?v=1.7.9";
+import { L } from "./i18n.js?v=1.7.10";
 import {
   ABILITIES, ACTIVATIONS, ApplicationV2, CFG, CHANGE_TYPES, DAMAGE_TYPES, DEFAULT_TYPE, DRAW_COLORS, DUR_UNITS,
   DialogV2 as DialogBase, FEAT_KINDS, FILTERS, FP, KEY_HINTS, K_FEATS, K_LOG, K_MILES, K_MYTH, K_RANKS, K_REQ,
@@ -16,10 +16,11 @@ import {
   refundDependents, reqsOf, resOf, featDefaults, findFeat, hasFeat, trimFeats, treeLock, treesOpenedBy, playerSees, resPresets, presetOf, resPathOf, THEMES, applyTheme, extraRes, resPath, resFromPath, syncPrimary, nodeExtras, extraName, LABEL_DEFAULTS, labelsOf, coinsOn, RES_KINDS, sumExtras, addExtras, addRes, addCoins, coinWorth, resUpdate, revoke, saveCfg, saveFile, saveTemplates, saveTrees, sendRequest,
   setData, skillAvail, skillEarned, stFlag, systemType, topoNodes, trainingOf, treeHasMythic, uid, unlockedOf,
   whisperOwners, withRank, wouldCycle
-} from "./core.js?v=1.7.9";
-import { SaveQueue } from "./persistence.js?v=1.7.9";
-import { validateTrees, remapTree } from "./validation.js?v=1.7.9";
-import { actorOperation } from "./operations.js?v=1.7.9";
+} from "./core.js?v=1.7.10";
+import { SaveQueue } from "./persistence.js?v=1.7.10";
+import { validateTrees, remapTree } from "./validation.js?v=1.7.10";
+import { actorOperation } from "./operations.js?v=1.7.10";
+import { calApi as _calApi, today as _today, dateText as _dateText } from "./core.js?v=1.7.10";
 
 // ───────────────────────── Janelas do módulo ─────────────────────────
 // Todas as janelas abertas pela Árvore usam o mesmo visual moderno e o tema escolhido.
@@ -41,7 +42,7 @@ export const charCard = (a, { name = "", checked = false, disabled = false, note
     <span class="st-who-t"><b>${esc(a.name)}</b><small>${sub}</small></span>
     <em>${note}</em><i class="fas fa-check st-who-ck"></i>
   </label>`;
-export const whoSub = a => [L`Nível ${actorLevel(a)}`, ownersOf(a).map(u => u.name).join(", ") || L("sem jogador")].join(" · ");
+export const whoSub = a => [L`Nível ${actorLevel(a)}`, esc(ownersOf(a).map(u => u.name).join(", ")) || L("sem jogador")].join(" · ");
 export const whoTools = (search = true) => `<div class="st-who-tools">
     ${search ? L`<input type="search" data-whofind placeholder="Buscar personagem…">` : ""}
     <button type="button" data-marcar="1" class="st-c-btn">${L("Selecionar tudo")}</button><button type="button" data-marcar="0" class="st-c-btn">${L("Desmarcar tudo")}</button></div>`;
@@ -57,7 +58,6 @@ export const wireWho = el => {
 };
 
 // ── seletor de data: Calendário da Mesa (ano, mês, dia) ou dias a partir de hoje ──
-import { calApi as _calApi, today as _today, dateText as _dateText } from "./core.js?v=1.7.9";
 export function datePicker(name, td = null) {
   const api = _calApi(), base = td ?? _today();
   if (api?.datas?.partes && api?.datas?.meses) {

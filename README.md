@@ -1,10 +1,8 @@
 # Árvore da Mesa
 
-**Versão 1.7.9** · Foundry VTT 14 · D&D 5e 6 · Português e English · Licença MIT · ✅ Testado no Foundry VTT e D&D 5e
+**Versão 1.7.10** · Foundry VTT 14 · D&D 5e 6 · Português e English · Licença MIT · ✅ Testado no Foundry VTT e D&D 5e
 
 ![Árvore da Mesa no Foundry VTT](<docs/Arvore de Habilidades Completa.png>)
-
-Árvore de Habilidades
 
 Árvores de habilidades visuais para o Foundry VTT. O mestre monta as árvores num mapa, define o que cada habilidade custa e exige, e os jogadores compram com Pontos de Habilidade, XP, Ouro ou recursos criados pelo próprio mestre. O que é comprado entra na ficha do personagem como talentos com botão de uso, efeitos e itens, e sai da ficha quando é reembolsado.
 
@@ -179,7 +177,7 @@ Organizam as árvores em abas (Fantasia é a inicial). O **+** cria, o lápis re
 
 Cada habilidade tem:
 
-- **Aparência**: forma, tamanho, cor e opção *Secreta* (o jogador vê `???` até cumprir os requisitos).
+- **Aparência**: forma, tamanho, cor e opção *Secreta* (o jogador vê `???` até cumprir os requisitos). A opção só esconde na interface: as árvores ficam numa configuração do mundo, que um jogador curioso consegue ler pelo console do navegador.
 - **Custo e níveis**: custo, pago com o recurso da árvore ou com Pontos Míticos, número de níveis, custo extra por nível, custos extras, moedas e itens consumidos.
 - **Comportamento**:
   - *Evolução*: substitui na ficha a habilidade anterior;

@@ -3,7 +3,7 @@
 //  Módulo Foundry VTT V14, sistema dnd5e 6
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { L } from "./i18n.js?v=1.7.9";
+import { L } from "./i18n.js?v=1.7.10";
 import {
   ABILITIES, ACTIVATIONS, ApplicationV2, CFG, CHANGE_TYPES, DAMAGE_TYPES, DEFAULT_TYPE, DRAW_COLORS, DUR_UNITS,
   DialogV2 as DialogBase, FEAT_KINDS, FILTERS, FP, KEY_HINTS, K_FEATS, K_LOG, K_MILES, K_MYTH, K_RANKS, K_REQ,
@@ -18,25 +18,25 @@ import {
   setData, skillAvail, skillEarned, stFlag, systemType, topoNodes, trainingOf, treeHasMythic, uid, unlockedOf,
   whisperOwners, withRank, wouldCycle,
   K_TEMP, tempsOf, tempOf, tempText, grantTemp, endTemp, today, dateText, calApi, syncShared, sharedCopies
-} from "./core.js?v=1.7.9";
-import { SaveQueue } from "./persistence.js?v=1.7.9";
-import { validateTrees, remapTree } from "./validation.js?v=1.7.9";
-import { actorOperation } from "./operations.js?v=1.7.9";
-import { DialogV2, charCard, whoSub, whoTools, wireWho } from "./ui-kit.js?v=1.7.9";
-import { MixCanvas } from "./app-canvas.js?v=1.7.9";
-import { MixPanel } from "./app-panel.js?v=1.7.9";
-import { MixEditor } from "./app-editor.js?v=1.7.9";
-import { MixDialogs } from "./app-dialogs.js?v=1.7.9";
-import { MixIo } from "./app-io.js?v=1.7.9";
-import { MixActions } from "./app-actions.js?v=1.7.9";
-import { MixUndo } from "./app-undo.js?v=1.7.9";
-import { MixTools } from "./app-tools.js?v=1.7.9";
-import { MixWelcome } from "./app-welcome.js?v=1.7.9";
+} from "./core.js?v=1.7.10";
+import { SaveQueue } from "./persistence.js?v=1.7.10";
+import { validateTrees, remapTree } from "./validation.js?v=1.7.10";
+import { actorOperation } from "./operations.js?v=1.7.10";
+import { DialogV2, charCard, whoSub, whoTools, wireWho } from "./ui-kit.js?v=1.7.10";
+import { MixCanvas } from "./app-canvas.js?v=1.7.10";
+import { MixPanel } from "./app-panel.js?v=1.7.10";
+import { MixEditor } from "./app-editor.js?v=1.7.10";
+import { MixDialogs } from "./app-dialogs.js?v=1.7.10";
+import { MixIo } from "./app-io.js?v=1.7.10";
+import { MixActions } from "./app-actions.js?v=1.7.10";
+import { MixUndo } from "./app-undo.js?v=1.7.10";
+import { MixTools } from "./app-tools.js?v=1.7.10";
+import { MixWelcome } from "./app-welcome.js?v=1.7.10";
 
 
 
 // ───────────────────────── Aplicação ─────────────────────────
-export const APP_VERSION = "1.7.9";
+export const APP_VERSION = "1.7.10";
 
 export class ArvoreHabilidades extends ApplicationV2 {
   static DEFAULT_OPTIONS = {
@@ -230,7 +230,7 @@ export class ArvoreHabilidades extends ApplicationV2 {
     const badge = (c, txt, extra = "") => `<span class="st-badge-n ${c}" ${extra}>${txt}</span>`;
     const showCost = !hidden && !n.synergy && st.rank < st.max && st.cost && st.key !== "training";
     const times = planIdx >= 0 ? this.plan.filter(x => x === n.id).length : 0;
-    return `<div class="${cls.join(" ")}" data-id="${esc(n.id)}" data-name="${esc(hidden ? "???" : n.name.toLowerCase())}" data-tags="${tags}" style="left:${n.x - r}px;top:${n.y - r}px;width:${2 * r}px;height:${2 * r}px;--c:${esc(n.color || "#c9a227")}" data-tooltip="${esc(tip)}">
+    return `<div class="${cls.join(" ")}" data-id="${esc(n.id)}" data-name="${esc(hidden ? "???" : n.name.toLowerCase())}" data-tags="${esc(tags)}" style="left:${n.x - r}px;top:${n.y - r}px;width:${2 * r}px;height:${2 * r}px;--c:${esc(n.color || "#c9a227")}" data-tooltip="${esc(tip)}">
       <div class="st-shape"><img src="${esc(hidden ? "icons/svg/padlock.svg" : (n.img || "icons/svg/book.svg"))}" draggable="false"></div>
       ${showCost ? badge(isMythic(n) ? "st-cost st-myth-b" : "st-cost", isMythic(n) ? `✦${st.cost}` : st.cost) : ""}
       ${!hidden && st.max > 1 ? badge("st-rank", `${st.rank}/${st.max}`) : ""}

@@ -1,5 +1,15 @@
 # Histórico de versões — Árvore da Mesa
 
+## 1.7.10
+
+- **Aviso de "CSS em cache" corrigido:** o arquivo de estilos trazia um número de versão antigo (1.7.5), então o módulo achava que o navegador estava usando arquivos velhos toda vez que carregava e recarregava o estilo à toa. Agora a versão do CSS acompanha a do módulo.
+- **Descrições importadas mais seguras:** o texto da descrição de uma habilidade (digitado ou vindo de um JSON importado) passa por uma limpeza antes de aparecer no painel. Scripts, iframes e links do tipo `javascript:` escondidos numa árvore baixada da internet não rodam mais.
+- **Conceder temporária:** a concessão e a marca de "temporária" agora são gravadas de uma vez só. Antes, se a gravação falhasse no meio, a habilidade podia ficar na ficha como permanente.
+- **Aba Skill Tree na ficha:** a cada vez que a ficha era redesenhada, o módulo adicionava mais um "ouvinte" nos cliques das abas; com o tempo isso acumulava. Agora entra uma vez só.
+- **Inglês:** vários textos que ainda saíam em português com o Foundry em inglês (histórico "desbloqueou/reembolsou", regras geradas das habilidades como "alcance", "dura", "desarmado", "sucesso: nada acontece", o cartão de Grande Feito "recebe/recebem", mensagens de permissão) agora seguem o idioma. As datas do histórico também seguem o idioma do Foundry.
+- README: a opção *Secreta* só esconde na interface (os dados das árvores ficam numa configuração do mundo); removida uma linha solta no topo. O relatório da revisão 1.2.0 foi para a pasta `docs/`.
+- Limpeza interna: código morto removido, um texto que ainda dizia "macro" passou a dizer "árvore".
+
 ## 1.7.9
 
 - **Tipos de efeito corrigidos no Foundry 14:** o Foundry 14 deixou de listar os tipos básicos (Adicionar, Multiplicar, Substituir, Aumentar até, Reduzir até, Personalizado) junto com os extras. Por isso, o menu de tipo no editor de efeitos mostrava só os extras (Bonus, Advantage Mode, Roll Maximum/Minimum e o do Automated Conditions 5e), e um efeito novo podia ficar salvo com o tipo errado. Agora os tipos básicos voltam a aparecer primeiro, e os extras continuam disponíveis no fim da lista.
@@ -117,4 +127,4 @@
 - Árvores prontas retiradas do módulo e distribuídas como JSONs separados.
 - Seções nomeáveis no lugar das abas fixas.
 
-Detalhes da revisão 1.2.0 em `RELATORIO-1.2.0.md`.
+Detalhes da revisão 1.2.0 em `docs/RELATORIO-1.2.0.md`.

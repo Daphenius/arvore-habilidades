@@ -23,6 +23,7 @@ export function validateTrees(raw) {
       for (const k of ['items','features','changes','reqNodes','reqItems','consume','ingredients','reqClasses','rankDescs']) if (n[k] !== undefined && !Array.isArray(n[k])) throw Error(`Lista inválida: ${k}.`);
       for (const k of ['features','changes','reqNodes','reqItems','consume','ingredients','reqClasses']) if (n[k]?.some(x => !object(x))) throw Error(`Entrada inválida em ${k}.`);
       if (n.items?.some(x => typeof x !== 'string')) throw Error('Referência de item inválida.');
+      if (n.features?.some(f => f.kind !== undefined && !(typeof f.kind === 'string' && /^[a-z0-9_-]{1,32}$/.test(f.kind)))) throw Error('Tipo de habilidade inválido em features.');
     }
     for (const e of t.edges) if (!object(e) || !ids.has(e.from) || !ids.has(e.to) || e.from === e.to) throw Error('Conexão aponta para habilidade inexistente ou para si mesma.');
     // Kahn: rejeita ciclos sem recursão, inclusive em árvores grandes.

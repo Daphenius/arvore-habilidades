@@ -1,7 +1,8 @@
 // A fila é local ao cliente. Não equivale a uma transação do servidor Foundry.
+import { L } from './i18n.js?v=1.7.10';
 const queues = new Map();
 export function actorOperation(actor, operation) {
-  if (!actor || (!game.user.isGM && !actor.isOwner)) return Promise.reject(Error('Sem permissão para alterar este personagem.'));
+  if (!actor || (!game.user.isGM && !actor.isOwner)) return Promise.reject(Error(L('Sem permissão para alterar este personagem.')));
   const key = actor.uuid ?? actor.id;
   const previous = queues.get(key) ?? Promise.resolve();
   const next = previous.catch(() => {}).then(() => transaction(actor, operation));
@@ -56,7 +57,7 @@ async function transaction(actor, operation) {
     for(const restore of undo.reverse()) try { await restore(); } catch(e) { failed.push(e); }
     if(failed.length) {
       console.error('Árvore da Mesa | recuperação incompleta',error,failed);
-      ui.notifications.error('A operação falhou e a recuperação ficou incompleta. Não repita a compra/reembolso; confira a ficha e o backup.',{permanent:true});
+      ui.notifications.error(L('A operação falhou e a recuperação ficou incompleta. Não repita a compra/reembolso; confira a ficha e o backup.'),{permanent:true});
     }
     throw error;
   }
