@@ -1,12 +1,16 @@
 import './env.mjs';
-import {get,set} from './env.mjs';
+import {get,set,setLang,LANGS} from './env.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { SaveQueue } from '../scripts/persistence.js';
 import { validateTrees, remapTree } from '../scripts/validation.js';
-const V=JSON.parse(fs.readFileSync(new URL('../module.json',import.meta.url))).version;
-const {actorOperation}=await import(`../scripts/operations.js?v=${V}`);
-const core=await import(`../scripts/core.js?v=${V}`);
+const {actorOperation}=await import(`../scripts/operations.js`);
+// as funções do módulo estão divididas em vários arquivos; "core" junta todos para os testes
+// (com Proxy, para ler sempre o valor atual de CFG, TREES_CACHE etc.)
+const MODS=await Promise.all(['core','regras','itens','chat','compras','temporarias','hooks','ficha','migracoes','settings'].map(m=>import(`../scripts/${m}.js`)));
+const core=new Proxy({},{get:(_,k)=>MODS.find(m=>k in m)?.[k],has:(_,k)=>MODS.some(m=>k in m)});
+const coreBase=MODS[0];
+const idioma=await import('../scripts/idioma.js');idioma.localizeLists(Object.values(coreBase));
 const {ArvoreHabilidades}=await import('../scripts/app.js');
 let count=0;
 async function test(name,fn) { await fn(); console.log('PASS',name);count++; }
@@ -250,7 +254,6 @@ await test('tree settings save the lock options',async()=>{
  await app.close();game.settings.get=()=>undefined;core.invalidateTrees();
 });
 await test('english: every screen keeps the same HTML structure and user names are never translated',async()=>{
- const i18n=await import(`../scripts/i18n.js?v=${V}`);
  const A=tree(),B=tree();A.t.name='Escudo de Luz';A.t.desc='Nível de proteção';A.t.feats=[{id:'f1',name:'Salvou o reino',pts:2}];B.t.lockKind='feat';B.t.lockFeat='f1';
  A.n.name='Nova habilidade';A.n.ranks=2;A.n.features=[core.featureDefaults()];core.normalizeTree(A.t);
  const a=actor();A.t.assigned=[a.id];game.actors.push(a);
@@ -261,7 +264,7 @@ await test('english: every screen keeps the same HTML structure and user names a
   out.push(await app._renderHTML());app.sel=A.n.id;out.push(await app._renderHTML());app.mode='edit';out.push(await app._renderHTML());app.sel=null;out.push(await app._renderHTML());
   await app.treeConfig();await app.generalConfig();await app.featDialog();await app.editFeat('f1');await app.resetAllDialog();await app.themeDialog().catch(()=>{});
   await app.close();return [...out,...grab];};
- i18n.setLang('pt-BR');const pt=await shots();i18n.setLang('en');const en=await shots();i18n.setLang(null);
+ setLang('pt-BR');idioma.localizeLists(Object.values(coreBase));const pt=await shots();setLang('en');idioma.localizeLists(Object.values(coreBase));const en=await shots();setLang('pt-BR');idioma.localizeLists(Object.values(coreBase));
  const tags=h=>(h.match(/<\/?[a-zA-Z][^>]*>/g)||[]).map(t=>t.replace(/="[^"]*"/g,'=""'));
  assert.equal(pt.length,en.length);
  for(let i=0;i<pt.length;i++){assert.deepEqual(tags(en[i]),tags(pt[i]),'markup changed in screen '+i);}
@@ -322,7 +325,7 @@ await test('shared abilities: editing one copy updates the others, keeps positio
  await app.close();game.settings.get=()=>undefined;core.invalidateTrees();
 });
 await test('validator finds impossible and loose abilities; stats add up the cost to take everything',async()=>{
- const tools=await import(`../scripts/app-tools.js?v=${V}`);
+ const tools=await import(`../scripts/app-tools.js`);
  const {t,n}=tree();const a2=core.newNode(200,0,{name:'B',cost:2,group:'g'}),a3=core.newNode(400,0,{name:'C',cost:4,group:'g'}),a4=core.newNode(600,0,{name:'D',cost:1}),lone=core.newNode(900,900,{name:'Solta',cost:1});
  t.nodes.push(a2,a3,a4,lone);t.edges=[{from:n.id,to:a2.id},{from:n.id,to:a3.id},{from:a2.id,to:a4.id},{from:a3.id,to:a4.id}];
  a4.reqNodes=[{tree:'gone',node:'x'}];
@@ -335,7 +338,7 @@ await test('validator finds impossible and loose abilities; stats add up the cos
 await test('import by link converts GitHub page links and imports the JSON; welcome shows once',async()=>{
  const {t}=tree();t.name='Remota';const settings={trees:{list:[]},welcomeSeen:false};game.settings.get=(m,k)=>settings[k];game.settings.set=async(m,k,v)=>settings[k]=v;core.invalidateTrees();core.ST.catalog={};
  const app=new ArvoreHabilidades();
- const io=await import(`../scripts/app-io.js?v=${V}`);assert.equal(io.rawLink('https://github.com/u/r/blob/main/a/b.json'),'https://raw.githubusercontent.com/u/r/main/a/b.json');
+ const io=await import(`../scripts/app-io.js`);assert.equal(io.rawLink('https://github.com/u/r/blob/main/a/b.json'),'https://raw.githubusercontent.com/u/r/main/a/b.json');
  let asked=null;globalThis.fetch=async u=>{asked=u;return{ok:true,status:200,headers:{get:()=>null},text:async()=>JSON.stringify([t])};};
  const D=foundry.applications.api.DialogV2;D.prompt=async o=>o.ok.callback?o.ok.callback(null,{form:{elements:{url:{value:'https://github.com/u/r/blob/main/x.json'}}}}):null;
  await app.importLink();assert.equal(asked,'https://raw.githubusercontent.com/u/r/main/x.json');assert.equal(settings.trees.list.length,1);assert.equal(settings.trees.list[0].name,'Remota');
@@ -422,12 +425,39 @@ await test('long rest done by a player on the sheet is counted by the GM (also a
  await core.processAllRestQueues();
  game.users=users;game.actors.length=0;game.settings.get=()=>undefined;core.invalidateTrees();
 });
-await test('language follows the user setting, not the server default read before i18nInit',async()=>{
- const old=game.i18n.lang;game.i18n.lang='pt-BR';
- const i=await import(`../scripts/i18n.js?fresh=${Date.now()}`);
- assert.equal(i.L('Fantasia'),'Fantasia','before i18nInit stays in Portuguese');
- game.i18n.lang='en';i.i18nReady();
- assert.equal(i.isEnglish(),true);assert.equal(i.L('Fantasia'),'Fantasy');
- game.i18n.lang=old;
+await test('language: every key used in the code exists in pt-BR and en, with the same {params}',async()=>{
+ const src=fs.readdirSync(new URL('../scripts/',import.meta.url)).filter(f=>f.endsWith('.js')).map(f=>fs.readFileSync(new URL('../scripts/'+f,import.meta.url),'utf8')).join('\n');
+ assert(!fs.existsSync(new URL('../scripts/i18n.js',import.meta.url)),'old i18n.js is gone');
+ assert(!/\bL`|\bL\(/.test(src),'no L`…` left');
+ const pt=LANGS['pt-BR'],en=LANGS.en;
+ const used=[...new Set([...src.matchAll(/["'`](ARVORE\.[A-Za-z0-9_.]+)["'`]/g)].map(m=>m[1]))];
+ const missing=used.filter(k=>!(k in pt)||!(k in en));
+ assert.deepEqual(missing,[],'keys used in the code but missing in lang/');
+ assert.deepEqual(Object.keys(pt).sort(),Object.keys(en).sort(),'pt-BR and en have the same keys');
+ const params=s=>(s.match(/\{\w+\}/g)||[]).sort().join();
+ const bad=Object.keys(pt).filter(k=>params(pt[k])!==params(en[k]));
+ assert.deepEqual(bad,[],'same {params} in both languages');
+ // o Foundry expande 'A.B.c' em objetos: uma chave não pode ser o começo de outra
+ const ks=Object.keys(pt);assert.deepEqual(ks.filter(k=>ks.some(o=>o.startsWith(k+'.'))),[],'no key is a prefix of another');
+ // um texto com {x} só aparece onde a chamada passa x
+ const {loc}=await import('../scripts/idioma.js');
+ setLang('en');assert.equal(loc('ARVORE.Regras.daquiADias',{n:3}),'in 3 day(s)');assert.equal(loc('ARVORE.Comum.fantasia'),'Fantasy');
+ setLang('pt-BR');assert.equal(loc('ARVORE.Regras.daquiADias',{n:3}),'daqui a 3 dia(s)');assert.equal(loc('ARVORE.Comum.fantasia'),'Fantasia');
+});
+await test('rankOf and totalRanks read without cloning and match rankEntry',()=>{
+ const a=actor(),{t}=tree();for(let i=0;i<6;i++)t.nodes.push(core.newNode(i,i,{name:'N'+i,cost:1}));
+ const ids=t.nodes.map(n=>n.id);
+ set(a,`flags.world.skillTree.${t.id}`,[ids[1],ids[2],ids[5]]);
+ set(a,`flags.world.skillRanks.${t.id}`,[{id:ids[2],r:3,paid:[1,1,1]},{id:ids[3],r:2,paid:[1,1]},{id:ids[2],r:9,paid:[]}]);
+ const before=JSON.stringify(get(a,`flags.world.skillRanks.${t.id}`));
+ let sum=0;for(const n of t.nodes){assert.equal(core.rankOf(a,t,n),core.rankEntry(a,t,n).r,n.name);sum+=core.rankEntry(a,t,n).r;}
+ assert.equal(core.totalRanks(a,t),sum);assert.equal(sum,1+3+2+1);
+ assert.equal(JSON.stringify(get(a,`flags.world.skillRanks.${t.id}`)),before,'reading does not change the actor');
+});
+await test('old preset fields are dropped when a tree is read',()=>{
+ const {t,n}=tree();t.preset='guerreiro';n.presetKey='golpe';n.ingredients=[{name:'x'}];
+ const m=core.normalizeTree(structuredClone(t));
+ assert(!('preset' in m));assert(!('presetKey' in m.nodes[0]));assert(!('ingredients' in m.nodes[0]));assert.equal(m.nodes[0].id,n.id);
+ validateTrees({...t,nodes:[{...n,ingredients:'not a list'}]}); // campo antigo não impede importar
 });
 console.log(`TOTAL: ${count} passed`);

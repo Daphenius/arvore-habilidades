@@ -4,9 +4,10 @@
 //  temporária, guarda como cada personagem estava. "Desfazer" na Mesa volta.
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { L, isEnglish } from "./i18n.js?v=1.7.10";
-import { SCOPE, clone, esc, getData, getProp, setData, stFlag, uid, whisperOwners, invalidateTrees } from "./core.js?v=1.7.10";
-import { DialogV2 } from "./ui-kit.js?v=1.7.10";
+import { loc } from "./idioma.js";
+import { SCOPE, clone, esc, getData, getProp, invalidateTrees, setData, uid } from "./core.js";
+import { stFlag } from "./hooks.js";
+import { DialogV2 } from "./ui-kit.js";
 
 // só as chaves deste módulo dentro de flags.world (outros módulos também usam "world")
 const OUR_KEYS = ["skillTree", "skillRanks", "skillLog", "skillReq", "skillTraining", "milestones", "skillPoints", "mythic", "skillTemp", "skillAvail", "stRes"];
@@ -40,10 +41,10 @@ export class MixUndo {
   async gmRecord(label, actors, fn) {
     if (!this.gm) return fn();
     const list = (actors ?? []).filter(Boolean);
-    const before = list.map(a => snap(a, sysPaths(this.trees)));
+    const antes = list.map(a => snap(a, sysPaths(this.trees)));
     const out = await fn();
-    if (out === false || !before.length) return out;
-    const entry = { id: uid(), at: Date.now(), label: String(label ?? ""), actors: before };
+    if (out === false || !antes.length) return out;
+    const entry = { id: uid(), at: Date.now(), label: String(label ?? ""), actors: antes };
     await setData("gmUndo", { list: [entry, ...this.undoList()].slice(0, MAX) });
     return out;
   }
@@ -52,8 +53,8 @@ export class MixUndo {
     const list = this.undoList(), e = list.find(x => x.id === id);
     if (!e) return;
     const names = e.actors.map(x => x.name).join(", ");
-    if (!await DialogV2.confirm({ window: { title: L("Desfazer") }, rejectClose: false,
-      content: `<p>${L`Desfazer <b>${esc(e.label)}</b>?`}</p><p class="st-c-hint">${L`Volta ${esc(names)} ao estado de antes. O que foi criado na ficha por esta ação é removido.`}</p>` })) return;
+    if (!await DialogV2.confirm({ window: { title: loc("ARVORE.Comum.desfazer") }, rejectClose: false,
+      content: `<p>${`${loc("ARVORE.Comum.desfazer")} <b>${esc(e.label)}</b>?`}</p><p class="st-c-hint">${loc("ARVORE.Desfazer.voltaAoEstadoDeAntesOQueFoiCriado", { names: esc(names) })}</p>` })) return;
     for (const s of e.actors) {
       const a = game.actors.get(s.id); if (!a) continue;
       const newItems = a.items.filter(i => !s.items.includes(i.id) && stFlag(i)).map(i => i.id);
@@ -74,16 +75,16 @@ export class MixUndo {
     }
     await setData("gmUndo", { list: list.filter(x => x.id !== id) });
     invalidateTrees();
-    ui.notifications.info(L`Desfeito: ${e.label}`);
+    ui.notifications.info(`${loc("ARVORE.Desfazer.desfeito")} ${e.label}`);
     this.render();
   }
 
   undoHTML() {
     const list = this.undoList();
     if (!list.length) return "";
-    const when = at => { const m = Math.round((Date.now() - at) / 60000); return m < 1 ? L("agora") : m < 60 ? (isEnglish() ? `${m} min ago` : `há ${m} min`) : new Date(at).toLocaleString(game.i18n?.lang || "pt-BR"); };
-    return `<div class="st-c-box st-undo"><h4><i class="fas fa-rotate-left"></i> ${L("Desfazer ações do mestre")}</h4>
+    const when = at => { const m = Math.round((Date.now() - at) / 60000); return m < 1 ? loc("ARVORE.Desfazer.agora") : m < 60 ? loc("ARVORE.Desfazer.haMinutos", { m }) : new Date(at).toLocaleString(game.i18n?.lang || "pt-BR"); };
+    return `<div class="st-c-box st-undo"><h4><i class="fas fa-rotate-left"></i> ${loc("ARVORE.Desfazer.desfazerAcoesDoMestre")}</h4>
       ${list.map(e => `<div class="st-undo-row"><span><b>${esc(e.label)}</b><small>${esc(e.actors.map(x => x.name).join(", "))} · ${when(e.at)}</small></span>
-        <button type="button" class="st-c-btn" data-undo="${esc(e.id)}"><i class="fas fa-rotate-left"></i> ${L("Desfazer")}</button></div>`).join("")}</div>`;
+        <button type="button" class="st-c-btn" data-undo="${esc(e.id)}"><i class="fas fa-rotate-left"></i> ${loc("ARVORE.Comum.desfazer")}</button></div>`).join("")}</div>`;
   }
 }

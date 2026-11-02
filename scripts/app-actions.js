@@ -3,26 +3,16 @@
 //  Métodos da janela ArvoreHabilidades (copiados para a classe em app.js)
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { L } from "./i18n.js?v=1.7.10";
+import { loc } from "./idioma.js";
 import {
-  ABILITIES, ACTIVATIONS, ApplicationV2, CFG, CHANGE_TYPES, DAMAGE_TYPES, DEFAULT_TYPE, DRAW_COLORS, DUR_UNITS,
-  DialogV2 as DialogBase, FEAT_KINDS, FILTERS, FP, KEY_HINTS, K_FEATS, K_LOG, K_MILES, K_MYTH, K_RANKS, K_REQ,
-  K_UNLOCK, MOD, RANK_FIELDS, RECOVERY, SHAPES, SIZES, SKILL_BONUS, SKILL_SPENT, ST, TE, 
-  actorLevel, addCharge, addLog, advanceTraining, box, canSee, cancelTraining, catOf, changeLabel,
-  chat, checkSynergies, clone, coin, countItem, doRefund, doUnlock, esc, featName, featsOf, featureDefaults,
-  featureRules, featureSummary, fixOrphans, getData, getProp, gmIds, grant, handleRequest, invalidateTrees, isMythic,
-  isSkill, isTyping, loadCatalog, loadTemplates, loadTrees, logOf, milestonesOf, mythicOf, newNode,
-  newTree, nodeById, nodeState, normalizeNode, normalizeTree, opts, orphanScan, ownersOf, parentsOf, payLabel, payOf,
-  pickRank, playerCharacters, rOf, rankEntry, rankOf, reqChecklist,
-  refundDependents, reqsOf, resOf, featDefaults, findFeat, hasFeat, trimFeats, treeLock, treesOpenedBy, playerSees, resPresets, presetOf, resPathOf, THEMES, applyTheme, extraRes, resPath, resFromPath, syncPrimary, nodeExtras, extraName, LABEL_DEFAULTS, labelsOf, coinsOn, RES_KINDS, sumExtras, addExtras, addRes, addCoins, coinWorth, resUpdate, revoke, saveCfg, saveFile, saveTemplates, saveTrees, sendRequest,
-  setData, skillAvail, skillEarned, stFlag, systemType, topoNodes, trainingOf, treeHasMythic, uid, unlockedOf,
-  whisperOwners, withRank, wouldCycle,
-  K_TEMP, tempsOf, tempOf, tempText, grantTemp, endTemp, today, dateText, calApi, longRest, longRestAll, restingActors
-} from "./core.js?v=1.7.10";
-import { SaveQueue } from "./persistence.js?v=1.7.10";
-import { validateTrees, remapTree } from "./validation.js?v=1.7.10";
-import { actorOperation } from "./operations.js?v=1.7.10";
-import { DialogV2, charCard, whoSub, whoTools, wireWho, datePicker, readDate, wireDate } from "./ui-kit.js?v=1.7.10";
+  DEFAULT_TYPE, FP, K_LOG, K_MILES, K_REQ, clone, esc, featureDefaults, loadTemplates, newNode,
+  newTree, nodeById, normalizeNode, resPresets, saveTemplates, uid
+} from "./core.js";
+import { addLog, whisperOwners } from "./chat.js";
+import { advanceTraining, cancelTraining, doRefund, doUnlock } from "./compras.js";
+import { calApi, milestonesOf, nodeState, reqsOf, today, trainingOf, unlockedOf } from "./regras.js";
+import { grantTemp, longRest } from "./temporarias.js";
+import { DialogV2, datePicker, readDate, wireDate } from "./ui-kit.js";
 
 export class MixActions {
   // ── ações ──
@@ -30,8 +20,8 @@ export class MixActions {
     const t = this.tree, a = this.actorDoc, n = this.selNode;
     const fi = Number(el?.dataset?.fi ?? 0);
     const playerActions = new Set(["help","theme","center","panel","pickActor","refundMode","refundClear","refundAllSel","refundConfirm","plan","clearPlan","confirmPlan","unlock","cancelReq","refund","refundAll","cancelTrain","export"]);
-    if (!this.gm && !playerActions.has(act)) throw new Error(L("Esta ação é exclusiva do mestre."));
-    if (!this.gm && a && !a.isOwner) throw new Error(L("Você não pode alterar este personagem."));
+    if (!this.gm && !playerActions.has(act)) throw new Error(loc("ARVORE.Comum.estaAcaoEExclusivaDoMestre"));
+    if (!this.gm && a && !a.isOwner) throw new Error(loc("ARVORE.Acoes.voceNaoPodeAlterarEstePersonagem"));
     switch (act) {
       case "addSection": return this.sectionDialog();
       case "renameSection": return this.sectionDialog(true);
@@ -64,7 +54,7 @@ export class MixActions {
       }
       case "dupNode": {
         if (!n) return;
-        const copy = normalizeNode({ ...clone(n), id: uid(), name: L`${n.name} (cópia)`, x: n.x + 60, y: n.y + 60 });
+        const copy = normalizeNode({ ...clone(n), id: uid(), name: `${n.name} ${loc("ARVORE.Acoes.copia")}`, x: n.x + 60, y: n.y + 60 });
         t.nodes.push(copy); this.sel = copy.id; this.save(); return this.render();
       }
       case "saveTpl": {
@@ -73,20 +63,20 @@ export class MixActions {
         const list = loadTemplates().filter(x => x.name !== tpl.name);
         list.push(tpl);
         await saveTemplates(list);
-        return ui.notifications.info(L`Modelo "${n.name}" salvo.`);
+        return ui.notifications.info(loc("ARVORE.Acoes.modeloSalvo", { name: n.name }));
       }
       case "copy": return this.copyNodes(this.multi.size ? [...this.multi] : (this.sel ? [this.sel] : []));
       case "paste": return this.pasteNodes();
       case "delMulti": {
         if (!this.multi.size) return;
-        if (!await DialogV2.confirm({ window: { title: L("Excluir habilidades") }, content: L`<p>Excluir ${this.multi.size} habilidade(s) selecionada(s)? (Ctrl+Z desfaz)</p><p style="font-size:12px">Quem já tinha recebe de volta o que pagou, e elas saem da ficha quando você fechar esta janela.</p>` })) return;
+        if (!await DialogV2.confirm({ window: { title: loc("ARVORE.Acoes.excluirHabilidades") }, content: `<p>${loc("ARVORE.Acoes.excluirHabilidadeSSelecionada", { size: this.multi.size })}</p><p style="font-size:12px">${loc("ARVORE.Acoes.quemJaTinhaRecebeDeVoltaOQue")}</p>` })) return;
         t.nodes = t.nodes.filter(x => !this.multi.has(x.id));
         t.edges = t.edges.filter(e => !this.multi.has(e.from) && !this.multi.has(e.to));
         this.multi.clear(); this.sel = null; this.save(); return this.render();
       }
       case "delNode": {
         if (!n) return;
-        if (!await DialogV2.confirm({ window: { title: L("Excluir habilidade") }, content: L`<p>Excluir <b>${esc(n.name)}</b>? (Ctrl+Z desfaz)</p><p style="font-size:12px">Quem já tinha recebe de volta o que pagou, e ela sai da ficha quando você fechar esta janela.</p>` })) return;
+        if (!await DialogV2.confirm({ window: { title: loc("ARVORE.Comum.excluirHabilidade") }, content: `<p>${loc("ARVORE.Comum.excluir")} <b>${esc(n.name)}</b>${loc("ARVORE.Acoes.ctrlZDesfaz")}</p><p style="font-size:12px">${loc("ARVORE.Acoes.quemJaTinhaRecebeDeVoltaOQue2")}</p>` })) return;
         t.nodes = t.nodes.filter(x => x.id !== n.id);
         t.edges = t.edges.filter(e => e.from !== n.id && e.to !== n.id);
         this.sel = null; this.save(); return this.render();
@@ -121,13 +111,13 @@ export class MixActions {
       case "dupTree": {
         if (!t) return;
         const copy = clone(t), map = {};
-        copy.id = uid(); copy.name = L`${t.name} (cópia)`; copy.assigned = [];
+        copy.id = uid(); copy.name = `${t.name} ${loc("ARVORE.Acoes.copia")}`; copy.assigned = [];
         copy.feats = (copy.feats ?? []).map(f => ({ ...f, id: uid() }));
         copy.nodes = copy.nodes.map(x => { const id = uid(); map[x.id] = id; return { ...x, id, shared: "" }; });
         copy.edges = copy.edges.map(e => ({ ...e, from: map[e.from], to: map[e.to] }));
         for (const node of copy.nodes) node.reqNodes = (node.reqNodes ?? []).map(r => r.tree === t.id ? { ...r, tree: copy.id, node: map[r.node] ?? r.node } : r);
         this.trees.push(copy); this.treeId = copy.id; this.sel = null; this.save(); this.render();
-        return ui.notifications.info(L`"${copy.name}" criada.`);
+        return ui.notifications.info(loc("ARVORE.Acoes.criada", { name: copy.name }));
       }
       case "treeCfg": return this.treeConfig();
       case "generalCfg": return this.generalConfig();
@@ -136,7 +126,7 @@ export class MixActions {
       case "exportAll": return this.exportAll();
       case "delTree": {
         if (!t) return;
-        if (!await DialogV2.confirm({ window: { title: L("Excluir Skill Tree") }, content: `<p>${L`Excluir a Skill Tree <b>${esc(t.name)}</b> inteira?`}</p><p class="st-c-hint">${L("Agora mesmo, os personagens recebem de volta o que gastaram nela e tudo o que ela colocou nas fichas é removido. Ctrl+Z traz a árvore de volta, mas sem o progresso.")}</p>` })) return;
+        if (!await DialogV2.confirm({ window: { title: loc("ARVORE.Acoes.excluirSkillTree") }, content: `<p>${`${loc("ARVORE.Acoes.excluirASkillTree")} <b>${esc(t.name)}</b> ${loc("ARVORE.Acoes.inteira")}`}</p><p class="st-c-hint">${loc("ARVORE.Acoes.agoraMesmoOsPersonagensRecebem")}</p>` })) return;
         this.trees = this.trees.filter(x => x.id !== t.id); this.treeId = null; this.sel = null; this.save(); this.render();
         return this.cleanSheets();
       }
@@ -151,15 +141,15 @@ export class MixActions {
       case "grantTemp": {
         if (!a || !n || !t) return;
         const res = await DialogV2.prompt({
-          window: { title: L`Conceder temporária — ${n.name}`, icon: "fas fa-hourglass-end" }, position: { width: 460 },
+          window: { title: `${loc("ARVORE.Acoes.concederTemporaria")} ${n.name}`, icon: "fas fa-hourglass-end" }, position: { width: 460 },
           content: `<div class="st-c">
-            <p class="st-c-lead">${L`Dá <b>${esc(n.name)}</b> de graça para <b>${esc(a.name)}</b> e tira sozinha depois. Bom para bênçãos, maldições e itens amaldiçoados.`}</p>
+            <p class="st-c-lead">${`${loc("ARVORE.Acoes.da")} <b>${esc(n.name)}</b> ${loc("ARVORE.Acoes.deGracaPara")} <b>${esc(a.name)}</b> ${loc("ARVORE.Acoes.eTiraSozinhaDepoisBomParaBencaos")}`}</p>
             <div class="st-c-cards">
-              <label class="st-c-card"><input type="radio" name="kind" value="rests" checked><i class="fas fa-bed"></i><b>${L("Descansos longos")}</b><small>${L("Some depois de X descansos longos do personagem.")}</small></label>
-              <label class="st-c-card"><input type="radio" name="kind" value="date"><i class="fas fa-calendar-day"></i><b>${L("Data")}</b><small>${calApi() ? L("Some na data escolhida do Calendário.") : L("Some depois de X dias do mundo.")}</small></label>
+              <label class="st-c-card"><input type="radio" name="kind" value="rests" checked><i class="fas fa-bed"></i><b>${loc("ARVORE.Acoes.descansosLongos")}</b><small>${loc("ARVORE.Acoes.someDepoisDeXDescansosLongos")}</small></label>
+              <label class="st-c-card"><input type="radio" name="kind" value="date"><i class="fas fa-calendar-day"></i><b>${loc("ARVORE.Acoes.data")}</b><small>${calApi() ? loc("ARVORE.Acoes.someNaDataEscolhidaDoCalendario") : loc("ARVORE.Acoes.someDepoisDeXDiasDoMundo")}</small></label>
             </div>
-            <div data-k="rests"><div class="st-c-row"><label>${L("Descansos longos")}</label><div class="st-c-f"><input type="number" name="left" min="1" value="1"></div></div></div>
-            <div data-k="date" hidden><div class="st-c-row"><label>${L("Some em")}</label><div class="st-c-f">${datePicker("until", today() + 1)}</div></div></div>
+            <div data-k="rests"><div class="st-c-row"><label>${loc("ARVORE.Acoes.descansosLongos")}</label><div class="st-c-f"><input type="number" name="left" min="1" value="1"></div></div></div>
+            <div data-k="date" hidden><div class="st-c-row"><label>${loc("ARVORE.Acoes.someEm")}</label><div class="st-c-f">${datePicker("until", today() + 1)}</div></div></div>
           </div>`,
           render: (ev, dlg) => {
             const el = dlg.element; if (!el?.querySelector) return;
@@ -167,25 +157,25 @@ export class MixActions {
             const sync = () => { const k = el.querySelector('[name="kind"]:checked')?.value; el.querySelectorAll("[data-k]").forEach(d => { d.hidden = d.dataset.k !== k; }); };
             el.querySelectorAll('[name="kind"]').forEach(r => r.addEventListener("change", sync)); sync();
           },
-          ok: { label: L("Conceder"), icon: "fas fa-hourglass-end", callback: (e, btn) => {
+          ok: { label: loc("ARVORE.Comum.conceder"), icon: "fas fa-hourglass-end", callback: (e, btn) => {
             const f = btn.form; const kind = f.querySelector('[name="kind"]:checked')?.value ?? "rests";
             return { kind, left: Math.max(1, Number(f.elements.left.value) || 1), until: kind === "date" ? readDate(f, "until") : null };
           } },
           rejectClose: false
         });
         if (!res) return;
-        if (res.kind === "date" && (res.until === null || res.until <= today())) return ui.notifications.warn(L("Escolha uma data depois de hoje."));
-        return this.gmRecord(L`Temporária: ${n.name} → ${a.name}`, [a], () => grantTemp(a, t, n, res));
+        if (res.kind === "date" && (res.until === null || res.until <= today())) return ui.notifications.warn(loc("ARVORE.Acoes.escolhaUmaDataDepoisDeHoje"));
+        return this.gmRecord(`${loc("ARVORE.Acoes.temporaria", { name: n.name })} ${a.name}`, [a], () => grantTemp(a, t, n, res));
       }
       case "grantFree": {
-        if (!await DialogV2.confirm({ window: { title: L("Conceder grátis") }, content: L`<p>Conceder <b>${esc(n.name)}</b> a ${esc(a.name)} sem custo, sem requisitos e sem treino?</p>` })) return;
-        return this.gmRecord(L`Grátis: ${n.name} → ${a.name}`, [a], () => doUnlock(a, t, n, { free: true }));
+        if (!await DialogV2.confirm({ window: { title: loc("ARVORE.Acoes.concederGratis") }, content: `<p>${loc("ARVORE.Comum.conceder")} <b>${esc(n.name)}</b> ${loc("ARVORE.Acoes.aSemCustoSemRequisitosESemTreino", { name: esc(a.name) })}</p>` })) return;
+        return this.gmRecord(`${loc("ARVORE.Acoes.gratis", { name: n.name })} ${a.name}`, [a], () => doUnlock(a, t, n, { free: true }));
       }
       case "cancelReq": return a?.update({ [K_REQ]: reqsOf(a).filter(r => !(r.tree === t.id && r.node === n.id)) });
       case "refund": {
         if (!a || !n) return;
         const st = nodeState(a, t, n);
-        if (!await DialogV2.confirm({ window: { title: L("Reembolsar") }, content: L`<p>${st.rank > 1 ? L`Reduzir <b>${esc(n.name)}</b> para o nível ${st.rank - 1}` : L`Remover <b>${esc(n.name)}</b>`} de ${esc(a.name)} e devolver ${Number(t.refundPct) < 100 ? L`${t.refundPct}% do` : L("o")} que foi pago?</p>` })) return;
+        if (!await DialogV2.confirm({ window: { title: loc("ARVORE.Comum.reembolsar") }, content: `<p>${st.rank > 1 ? `${loc("ARVORE.Acoes.reduzir")} <b>${esc(n.name)}</b> ${loc("ARVORE.Comum.paraONivel")} ${st.rank - 1}` : `${loc("ARVORE.Comum.remover")} <b>${esc(n.name)}</b>`} ${loc("ARVORE.Acoes.deEDevolverQueFoiPago", { name: esc(a.name), v: Number(t.refundPct) < 100 ? `${t.refundPct}${loc("ARVORE.Acoes.do")}` : loc("ARVORE.Acoes.o") })}</p>` })) return;
         return doRefund(a, t, n);
       }
       case "refundAll": return this.refundAll(a, t);
@@ -198,19 +188,19 @@ export class MixActions {
       case "trainDay": {
         if (!a) return;
         await longRest(a);
-        ui.notifications.info(L`Descanso longo contado para ${a.name}.`);
+        ui.notifications.info(loc("ARVORE.Acoes.descansoLongoContadoPara", { name: a.name }));
         return this.render();
       }
       case "addMile": {
         if (!a) return;
         const m = await DialogV2.prompt({
-          window: { title: L("Novo marco") },
-          content: L`<p>Nome do marco (ex.: "Derrotou um inimigo lendário").</p><input name="m" style="width:100%" autofocus>`,
-          ok: { label: L("Adicionar"), callback: (e, btn) => btn.form.elements.m.value.trim() }
+          window: { title: loc("ARVORE.Acoes.novoMarco") },
+          content: `<p>${loc("ARVORE.Acoes.nomeDoMarcoExDerrotouUmInimigo")}</p><input name="m" style="width:100%" autofocus>`,
+          ok: { label: loc("ARVORE.Comum.adicionar"), callback: (e, btn) => btn.form.elements.m.value.trim() }
         });
         if (!m) return;
         await a.update({ [K_MILES]: [...new Set([...milestonesOf(a), m])], [K_LOG]: addLog(a, { act: "mile", nodeName: m }) });
-        return whisperOwners(a, L`🏆 <b>${esc(a.name)}</b> alcançou o marco <b>${esc(m)}</b>.`);
+        return whisperOwners(a, `🏆 <b>${esc(a.name)}</b> ${loc("ARVORE.Comum.alcancouOMarco")} <b>${esc(m)}</b>.`);
       }
     }
   }
@@ -219,8 +209,8 @@ export class MixActions {
     const t = this.tree; if (!t || !this.gm) return;
     if (value === "@custom") return this.treeConfig();
     t.resPath = value;
-    t.resLabel = resPresets().find(x => x.value === value)?.label ?? L("Pontos");
+    t.resLabel = resPresets().find(x => x.value === value)?.label ?? loc("ARVORE.Comum.pontos");
     this.save(); this.render();
-    ui.notifications.info(L`"${t.name}" agora usa ${t.resLabel}.`);
+    ui.notifications.info(loc("ARVORE.Acoes.agoraUsa", { name: t.name, resLabel: t.resLabel }));
   }
 }

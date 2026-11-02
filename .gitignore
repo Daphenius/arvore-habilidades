@@ -3,3 +3,5 @@ arvores-individuais/
 *.zip
 .DS_Store
 Thumbs.db
+node_modules/
+tools/i18n-relatorio.json

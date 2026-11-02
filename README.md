@@ -1,16 +1,6 @@
 # Árvore da Mesa
 
-**Versão 1.7.10** · Foundry VTT 14 · D&D 5e 6 · Português e English · Licença MIT · ✅ Testado no Foundry VTT e D&D 5e
-
-![Árvore da Mesa no Foundry VTT](<docs/Arvore de Habilidades Completa.png>)
-
-Árvores de habilidades visuais para o Foundry VTT. O mestre monta as árvores num mapa, define o que cada habilidade custa e exige, e os jogadores compram com Pontos de Habilidade, XP, Ouro ou recursos criados pelo próprio mestre. O que é comprado entra na ficha do personagem como talentos com botão de uso, efeitos e itens, e sai da ficha quando é reembolsado.
-
-O módulo não vem com árvores prontas: você cria as suas ou importa arquivos JSON. A pasta [`Exemplo de Arvores`](<Exemplo de Arvores>) tem três árvores prontas para importar e servir de modelo.
-
-O lado bom de importar é que você pode pedir para a sua IA analisar o código do módulo e montar uma árvore inteira para você em JSON. Ou, se preferir, pode se aventurar e criar a sua árvore do zero direto no mapa. Também é muito divertido.
-
-### Sobre como este módulo foi feito
+## Sobre como este módulo foi feito
 
 Sei que parte da comunidade não gosta de módulos produzidos com IA, então prefiro ser transparente: este foi desenvolvido com ajuda de IA. Não sou programador.
 
@@ -19,6 +9,16 @@ Tudo começou quando um amigo me disse: “cara, ficou muito mais simples, é s�
 Se encontrar bugs ou tiver sugestões, abra uma issue. Todo retorno é bem-vindo.
 
 ---
+
+**Versão 1.11.0** · Foundry VTT 14 · D&D 5e 6 · Português e English · Licença MIT · ✅ Testado no Foundry VTT e D&D 5e
+
+![Árvore da Mesa no Foundry VTT](<docs/Arvore de Habilidades Completa.png>)
+
+Árvores de habilidades visuais para o Foundry VTT. O mestre monta as árvores num mapa, define o que cada habilidade custa e exige, e os jogadores compram com Pontos de Habilidade, XP, Ouro ou recursos criados pelo próprio mestre. O que é comprado entra na ficha do personagem como talentos com botão de uso, efeitos e itens, e sai da ficha quando é reembolsado.
+
+O módulo não vem com árvores prontas: você cria as suas ou importa arquivos JSON. A pasta [`Exemplo de Arvores`](<Exemplo de Arvores>) tem três árvores prontas para importar e servir de modelo.
+
+O lado bom de importar é que você pode pedir para a sua IA analisar o código do módulo e montar uma árvore inteira para você em JSON. Ou, se preferir, pode se aventurar e criar a sua árvore do zero direto no mapa. Também é muito divertido.
 
 ## Sumário
 
@@ -97,7 +97,7 @@ Use o botão de árvore na barra de ferramentas de token, o atalho **Shift+K** o
 4. Reinicie o Foundry e recarregue o navegador com **Ctrl+F5**.
 5. Confira primeiro numa cópia do mundo.
 
-Árvores e progresso ficam salvos no mundo, não na pasta do módulo, e são mantidos entre versões. Mesmo assim, faça backup antes de atualizar. Se o navegador estiver usando arquivos antigos, o módulo avisa e pede Ctrl+F5.
+Árvores e progresso ficam salvos no mundo, não na pasta do módulo, e são mantidos entre versões. Mesmo assim, faça backup antes de atualizar. Se depois de atualizar algo parecer estranho (botões faltando, janela quebrada), recarregue o navegador com Ctrl+F5.
 
 ---
 
@@ -262,7 +262,7 @@ Essas opções também aparecem em *Configurações do Jogo → Configurar Módu
 ### Tema e idioma
 
 - **Tema**: o botão de paleta na barra (ou *Configurar Módulos → Tema de cores*) escolhe entre Dourado, Azul, Roxo, Esmeralda, Carmesim e Claro. Cada pessoa escolhe o seu.
-- **Idioma**: segue o Foundry. Em português, tudo em português; em qualquer outro idioma, a interface fica em inglês. Nomes e textos criados pelo mestre nunca são traduzidos.
+- **Idioma**: segue o Foundry. Em português, tudo em português; em qualquer outro idioma, a interface fica em inglês. Nomes e textos criados pelo mestre nunca são traduzidos. Todos os textos ficam em `lang/pt-BR.json` e `lang/en.json`: para traduzir para outro idioma, basta copiar o `en.json`, traduzir e registrar o arquivo em `languages` no `module.json`.
 
 ---
 
@@ -304,6 +304,7 @@ api.open();                            // abre a janela
 api.openFor(actorId, treeId, nodeId);  // abre num personagem, árvore e habilidade
 api.trees();                           // lista das Skill Trees
 api.fixPoints();                       // devolve pontos e limpa fichas de habilidades excluídas
+api.version;                           // versão instalada (a do module.json)
 ```
 
 O progresso de cada personagem fica em `flags.world` do ator (`skillTree`, `skillRanks`, `skillTraining`, `skillTemp`, `mythic`…). Os itens e efeitos criados pelo módulo têm `flags.world.skillTree = { tree, node }`.
@@ -312,7 +313,7 @@ O progresso de cada personagem fica em `flags.world` do ator (`skillTree`, `skil
 
 ## Solução de problemas
 
-- **"Seu navegador está usando arquivos antigos"**: recarregue com Ctrl+F5.
+- **Janela quebrada ou visual antigo logo depois de atualizar**: o navegador pode estar com arquivos velhos guardados. Recarregue com Ctrl+F5.
 - **Pontos não voltaram depois de excluir algo**: use **Mesa → Corrigir pontos**.
 - **Falha ao salvar**: a edição continua na janela e o fechamento é interrompido. Resolva a conexão e feche de novo. Se outra janela alterou as mesmas árvores, exporte suas edições antes de recarregar.
 - **Importar por link não funciona**: o site bloqueou o download direto. Baixe o arquivo e use *Importar → Arquivo*.
@@ -345,12 +346,22 @@ Um dos testes confere os JSONs da pasta `Exemplo de Arvores`.
 | Arquivo | Conteúdo |
 | --- | --- |
 | `scripts/main.js` | inicialização, atalho, botão na barra e API |
-| `scripts/core.js` | regras, compras, reembolsos, automações e dados dos personagens |
+| `scripts/core.js` | constantes, configurações, listas de opções, modelos e leitura das árvores |
+| `scripts/regras.js` | níveis, custos, pagamentos, pré-requisitos, bloqueios e sinergias |
+| `scripts/compras.js` | desbloquear, reembolsar, pontos presos e treino |
+| `scripts/itens.js` | talentos, efeitos e itens que cada habilidade põe na ficha |
+| `scripts/temporarias.js` | habilidades temporárias e descansos longos |
+| `scripts/chat.js` | cartões no chat, efeitos visuais e pedidos ao mestre |
+| `scripts/ficha.js` | botão e aba "Skill Tree" na ficha (dnd5e e Tidy 5e) |
+| `scripts/hooks.js` | automações de fundo e aviso de habilidade disponível |
+| `scripts/migracoes.js` | migrações de versões antigas e da macro |
+| `scripts/settings.js` | configurações registradas no Foundry |
 | `scripts/app.js` | base da janela |
 | `scripts/app-canvas.js` | mapa: desenho, arrastar, zoom, ligações |
 | `scripts/app-panel.js` | painel lateral no modo jogo |
 | `scripts/app-editor.js` | editor de habilidade |
-| `scripts/app-dialogs.js` | janelas: Mesa, configurações, personagens, Grandes Feitos |
+| `scripts/app-dialogs.js` | janelas de configuração: seções, modelos, Skill Tree, gerais, temas, personagens |
+| `scripts/app-mesa.js` | Mesa do mestre: recompensas, NPCs, Grandes Feitos, diário, corrigir pontos |
 | `scripts/app-io.js` | importar e exportar |
 | `scripts/app-actions.js` | ações dos botões |
 | `scripts/app-undo.js` | desfazer do mestre |
@@ -360,13 +371,15 @@ Um dos testes confere os JSONs da pasta `Exemplo de Arvores`.
 | `scripts/persistence.js` | fila de gravação |
 | `scripts/operations.js` | operações seguras nas fichas, com recuperação em caso de falha |
 | `scripts/validation.js` | validação de importação |
-| `scripts/i18n.js` | tradução para inglês |
-| `lang/` | textos das configurações do Foundry (pt-BR e en) |
+| `scripts/idioma.js` | `loc()`: busca os textos em `lang/` no idioma do usuário |
+| `lang/` | todos os textos da interface, em português (`pt-BR.json`) e inglês (`en.json`) |
 | `styles/arvore-habilidades.css` | visual e temas |
 | `CHANGELOG.md` | histórico de versões |
 | `LICENSE` | licença MIT |
 | `docs/` | capturas de tela |
 | `Exemplo de Arvores/` | árvores prontas em JSON para importar (ficam só no repositório, fora do ZIP) |
+| `tools/` | ferramentas de desenvolvimento: refazer imports, achar texto sem tradução (ficam só no repositório, fora do ZIP) |
+| `eslint.config.mjs` | verificação do código (imports sem uso, nomes indefinidos) |
 | `.github/workflows/release.yml` | monta e anexa o ZIP e o `module.json` ao publicar uma release |
 
 ---
@@ -376,6 +389,10 @@ Um dos testes confere os JSONs da pasta `Exemplo de Arvores`.
 Idealizado e desenvolvido por **Daphenius**, com auxílio de Claude e ChatGPT na elaboração, revisão e refatoração do código.
 
 A definição das funcionalidades, as decisões do projeto e os testes dentro do Foundry VTT foram realizados pelo autor.
+
+Por que a opção *Secreta* não esconde os dados de verdade: avaliado na 1.11.0. Para isso, as árvores teriam de sair da configuração do mundo e chegar a cada jogador pelo mestre (socket), só com as habilidades que aquele personagem pode ver. Mas o que fica visível muda a cada compra, nível, item ou Grande Feito, e o computador do jogador precisa da árvore inteira para conferir requisitos entre árvores, sinergias e montar os itens na compra. Seria preciso o mestre estar sempre conectado (hoje o jogador compra sozinho) e mexer no caminho das compras, que é a parte mais testada do módulo. Ficou o aviso.
+
+Testes automáticos: `node tests/regression.mjs` (precisa só do Node 20 ou mais novo). Verificação do código: `npx eslint scripts/`. Depois de mover funções entre arquivos, `node tools/arrumar-imports.mjs --gravar` refaz os imports (antes, `cd tools && npm i`).
 
 ---
 

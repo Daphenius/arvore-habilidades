@@ -1,5 +1,37 @@
 # Histórico de versões — Árvore da Mesa
 
+## 1.11.0
+
+- **Erros não somem mais em silêncio:** vários pontos (som ao subir de nível, animação da transformação, data do Calendário da Mesa, leitura das configurações, tema, guia de boas-vindas) engoliam qualquer erro sem deixar rastro. Agora eles avisam no console (F12) com "Árvore da Mesa | …", o que ajuda a achar a causa se algo não funcionar.
+- **Arrastar no mapa:** ao soltar um desenho, uma borracha ou uma habilidade arrastada, os "ouvintes" do mouse eram removidos duas vezes, em dois lugares. Agora um lugar só cuida disso.
+- **Restos de recursos antigos removidos:** a configuração "presets" (gravada só na migração da macro e nunca lida) e os campos `preset`, `presetKey` e `ingredients` dos modelos prontos antigos. Árvores e JSONs antigos continuam abrindo e importando normalmente: esses campos são simplesmente ignorados.
+- Nomes internos padronizados em português e o relatório antigo `docs/RELATORIO-1.2.0.md` apagado.
+- **Habilidades secretas:** avaliamos guardar as árvores fora do alcance dos jogadores. Isso exigiria o mestre sempre conectado para os jogadores comprarem e mexeria no caminho das compras; por isso continua valendo o aviso do README (a opção *Secreta* esconde na interface, não no console). A explicação está no README, em Desenvolvimento.
+- Nenhuma mudança nas regras de pontos, compras, reembolsos, treino ou habilidades temporárias. Os testes passam sem mensagens de erro escondidas, e entrou um teste novo para os campos antigos.
+
+## 1.10.0
+
+- **Código reorganizado (por dentro):** o arquivo principal, que tinha quase 2.000 linhas misturando regras, ficha, chat, automações, migrações e configurações, foi dividido em arquivos menores, cada um com um assunto: `regras.js`, `compras.js`, `itens.js`, `temporarias.js`, `chat.js`, `ficha.js`, `hooks.js`, `migracoes.js` e `settings.js`. As janelas da Mesa do mestre saíram para `app-mesa.js`. Nenhum arquivo passa de ~600 linhas.
+- **Imports enxutos:** cada arquivo agora importa só o que usa (antes, quase todos importavam os mesmos ~150 nomes). Um verificador (ESLint) confere imports sem uso e nomes que não existem.
+- **Janela mais leve em árvores grandes:** para calcular o custo de cada habilidade, o módulo copiava a lista inteira de níveis do personagem uma vez por habilidade, a cada desenho da janela. Agora lê a lista uma vez, sem copiar.
+- As funções foram só movidas de lugar: as regras de pontos, compras, reembolsos, treino e habilidades temporárias são as mesmas. Os 51 testes continuam passando, e entrou mais um que confere a leitura dos níveis.
+
+## 1.9.0
+
+- **Inglês completo, no padrão do Foundry:** todos os textos da interface agora ficam em `lang/pt-BR.json` e `lang/en.json` (cerca de 1.150 textos), como em qualquer módulo do Foundry. Antes, o inglês era um dicionário dentro do código que traduzia procurando pedaços do texto em português: qualquer letra mudada no português fazia aquele trecho sair sem tradução, sem aviso.
+- **Textos que ainda saíam em português com o Foundry em inglês:** o guia de boas-vindas (frases pela metade, como "aberta e o personagem"), o resumo das Estatísticas, avisos como "acabou para", "reduziu", "carregada", as unidades de duração (rodadas, minutos, horas, dias), o tamanho "Normal" e as mensagens de erro ao importar um JSON inválido.
+- **Outros idiomas:** dá para traduzir o módulo copiando o `en.json`; o README explica como.
+- Os testes agora conferem que toda chave usada no código existe nos dois idiomas, com os mesmos `{valores}`.
+- Nenhuma mudança nas regras de pontos, compras, reembolsos, treino ou habilidades temporárias.
+
+## 1.8.0
+
+- **Versão num lugar só:** o número da versão agora fica só no `module.json`. Antes ele estava repetido em 17 arquivos de código, no estilo (CSS) e em duas constantes; quando um deles ficava para trás, o módulo achava que o navegador estava com arquivos velhos (foi o que causou o aviso de "CSS em cache" da 1.7.10).
+- **Sem recarregar sozinho:** saiu a verificação que, ao abrir o mundo, comparava versões, trocava o CSS e às vezes recarregava a página. Ela só existia por causa do esquema acima. Se depois de atualizar algo parecer estranho, aperte Ctrl+F5.
+- **Para macros:** `game.modules.get("arvore-habilidades").api.version` mostra a versão instalada.
+- README: a seção "Sobre como este módulo foi feito" agora vem logo abaixo do título.
+- Nenhuma mudança nas regras de pontos, compras, reembolsos, treino ou habilidades temporárias. Os 51 testes continuam passando.
+
 ## 1.7.10
 
 - **Aviso de "CSS em cache" corrigido:** o arquivo de estilos trazia um número de versão antigo (1.7.5), então o módulo achava que o navegador estava usando arquivos velhos toda vez que carregava e recarregava o estilo à toa. Agora a versão do CSS acompanha a do módulo.
@@ -127,4 +159,4 @@
 - Árvores prontas retiradas do módulo e distribuídas como JSONs separados.
 - Seções nomeáveis no lugar das abas fixas.
 
-Detalhes da revisão 1.2.0 em `docs/RELATORIO-1.2.0.md`.
+Detalhes da revisão 1.2.0 estavam em `docs/RELATORIO-1.2.0.md` (removido na 1.11.0).

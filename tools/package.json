@@ -1,0 +1,7 @@
+{
+  "name": "arvore-habilidades-tools",
+  "private": true,
+  "type": "module",
+  "description": "Ferramentas de desenvolvimento (não vão para o ZIP do módulo).",
+  "devDependencies": { "acorn": "^8.14.0", "acorn-walk": "^8.3.4" }
+}

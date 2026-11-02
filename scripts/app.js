@@ -3,41 +3,33 @@
 //  Módulo Foundry VTT V14, sistema dnd5e 6
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { L } from "./i18n.js?v=1.7.10";
+import { loc } from "./idioma.js";
 import {
-  ABILITIES, ACTIVATIONS, ApplicationV2, CFG, CHANGE_TYPES, DAMAGE_TYPES, DEFAULT_TYPE, DRAW_COLORS, DUR_UNITS,
-  DialogV2 as DialogBase, FEAT_KINDS, FILTERS, FP, KEY_HINTS, K_FEATS, K_LOG, K_MILES, K_MYTH, K_RANKS, K_REQ,
-  K_UNLOCK, MOD, RANK_FIELDS, RECOVERY, SHAPES, SIZES, SKILL_BONUS, SKILL_SPENT, ST, TE, 
-  actorLevel, addCharge, addLog, advanceTraining, box, canSee, cancelTraining, catOf, changeLabel,
-  chat, checkSynergies, clone, coin, countItem, doRefund, doUnlock, esc, featName, featsOf, featureDefaults,
-  featureRules, featureSummary, fixOrphans, getData, getProp, gmIds, grant, handleRequest, invalidateTrees, isMythic,
-  isSkill, isTyping, loadCatalog, loadTemplates, loadTrees, logOf, milestonesOf, mythicOf, newNode,
-  newTree, nodeById, nodeState, normalizeNode, normalizeTree, opts, orphanScan, ownersOf, parentsOf, payLabel, payOf,
-  pickRank, playerCharacters, rOf, rankEntry, rankOf, reqChecklist,
-  refundDependents, reqsOf, resOf, featDefaults, findFeat, hasFeat, trimFeats, treeLock, treesOpenedBy, playerSees, resPresets, presetOf, resPathOf, THEMES, applyTheme, extraRes, resPath, resFromPath, syncPrimary, nodeExtras, extraName, LABEL_DEFAULTS, labelsOf, coinsOn, RES_KINDS, sumExtras, addExtras, addRes, addCoins, coinWorth, resUpdate, revoke, saveCfg, saveFile, saveTemplates, saveTrees, sendRequest,
-  setData, skillAvail, skillEarned, stFlag, systemType, topoNodes, trainingOf, treeHasMythic, uid, unlockedOf,
-  whisperOwners, withRank, wouldCycle,
-  K_TEMP, tempsOf, tempOf, tempText, grantTemp, endTemp, today, dateText, calApi, syncShared, sharedCopies
-} from "./core.js?v=1.7.10";
-import { SaveQueue } from "./persistence.js?v=1.7.10";
-import { validateTrees, remapTree } from "./validation.js?v=1.7.10";
-import { actorOperation } from "./operations.js?v=1.7.10";
-import { DialogV2, charCard, whoSub, whoTools, wireWho } from "./ui-kit.js?v=1.7.10";
-import { MixCanvas } from "./app-canvas.js?v=1.7.10";
-import { MixPanel } from "./app-panel.js?v=1.7.10";
-import { MixEditor } from "./app-editor.js?v=1.7.10";
-import { MixDialogs } from "./app-dialogs.js?v=1.7.10";
-import { MixIo } from "./app-io.js?v=1.7.10";
-import { MixActions } from "./app-actions.js?v=1.7.10";
-import { MixUndo } from "./app-undo.js?v=1.7.10";
-import { MixTools } from "./app-tools.js?v=1.7.10";
-import { MixWelcome } from "./app-welcome.js?v=1.7.10";
+  ApplicationV2, CFG, FILTERS, MOD, SKILL_BONUS, SKILL_SPENT, ST, canSee, catOf, clone, esc, getData,
+  getProp, invalidateTrees, loadTrees, nodeById, normalizeTree, opts, playerSees, presetOf, rOf,
+  resPresets, saveTrees, setData
+} from "./core.js";
+import { MixActions } from "./app-actions.js";
+import { MixCanvas } from "./app-canvas.js";
+import { MixDialogs } from "./app-dialogs.js";
+import { MixEditor } from "./app-editor.js";
+import { MixIo } from "./app-io.js";
+import { MixMesa } from "./app-mesa.js";
+import { MixPanel } from "./app-panel.js";
+import { MixTools } from "./app-tools.js";
+import { MixUndo } from "./app-undo.js";
+import { MixWelcome } from "./app-welcome.js";
+import { fixOrphans } from "./compras.js";
+import { SaveQueue } from "./persistence.js";
+import {
+  actorLevel, isMythic, isSkill, loadCatalog, mythicOf, nodeState, reqsOf, resOf, skillEarned,
+  syncShared, treeHasMythic, treeLock, unlockedOf
+} from "./regras.js";
+import { tempOf } from "./temporarias.js";
 
 
 
 // ───────────────────────── Aplicação ─────────────────────────
-export const APP_VERSION = "1.7.10";
-
 export class ArvoreHabilidades extends ApplicationV2 {
   static DEFAULT_OPTIONS = {
     id: "st-arvore",
@@ -56,7 +48,7 @@ export class ArvoreHabilidades extends ApplicationV2 {
     this._writer = new SaveQueue(async trees => {
       if (this._conflict || JSON.stringify(getData("trees", { list: [] })) !== this._persisted) {
         this._conflict = true;
-        throw new Error(L("As árvores foram alteradas por outra janela. Exporte suas edições antes de recarregar."));
+        throw new Error(loc("ARVORE.Janela.asArvoresForamAlteradasPorOutra"));
       }
       await saveTrees(trees);
       this._persisted = JSON.stringify(getData("trees", { list: [] }));
@@ -64,8 +56,8 @@ export class ArvoreHabilidades extends ApplicationV2 {
       if (!trees.length && getData("pendingCleanup", false) !== true) await setData("pendingCleanup", true);
       invalidateTrees();
     }, error => {
-      console.error(L("Árvore da Mesa | gravação"), error);
-      ui.notifications.error(L`Não foi possível salvar: ${error.message}`, { permanent: true });
+      console.error(loc("ARVORE.Janela.arvoreDaMesaGravacao"), error);
+      ui.notifications.error(`${loc("ARVORE.Janela.naoFoiPossivelSalvar")} ${error.message}`, { permanent: true });
     });
     this.mode = "play";
     this.sel = null;
@@ -108,7 +100,7 @@ export class ArvoreHabilidades extends ApplicationV2 {
         if (u === game.user.id && this._writer.running) return;
         if (this._writer.dirty) {
           this._conflict = true;
-          ui.notifications.warn(L("Outra janela alterou as árvores. Suas edições foram preservadas para exportação."));
+          ui.notifications.warn(loc("ARVORE.Janela.outraJanelaAlterouAsArvoresSuas"));
           return;
         }
         this._persisted = JSON.stringify(getData("trees", { list: [] }));
@@ -125,13 +117,13 @@ export class ArvoreHabilidades extends ApplicationV2 {
   }
 
   sections() {
-    const saved = getData("sections", { list: [{ id: "fantasy", name: L("Fantasia") }] }).list;
-    const list = Array.isArray(saved) ? clone(saved) : [{ id: "fantasy", name: L("Fantasia") }];
+    const saved = getData("sections", { list: [{ id: "fantasy", name: loc("ARVORE.Comum.fantasia") }] }).list;
+    const list = Array.isArray(saved) ? clone(saved) : [{ id: "fantasy", name: loc("ARVORE.Comum.fantasia") }];
     // nome padrão da primeira seção segue o idioma (se o mestre não o renomeou)
-    for (const c of list) if (c?.id === "fantasy" && ["Fantasia", "Fantasy"].includes(c.name)) c.name = L("Fantasia");
+    for (const c of list) if (c?.id === "fantasy" && ["Fantasia", "Fantasy", "ARVORE.Comum.fantasia"].includes(c.name)) c.name = loc("ARVORE.Comum.fantasia");
     for (const t of this.trees) {
       const id = catOf(t);
-      if (!list.some(c => c.id === id)) list.push({ id, name: this._goneSections?.[id] ?? (id === "sequences" ? L("Sequências") : id === "fantasy" ? L("Fantasia") : L("Seção importada")) });
+      if (!list.some(c => c.id === id)) list.push({ id, name: this._goneSections?.[id] ?? (id === "sequences" ? loc("ARVORE.Janela.sequencias") : id === "fantasy" ? loc("ARVORE.Comum.fantasia") : loc("ARVORE.Janela.secaoImportada")) });
     }
     return list;
   }
@@ -153,7 +145,7 @@ export class ArvoreHabilidades extends ApplicationV2 {
   get selNode() { return this.tree ? nodeById(this.tree, this.sel) : null; }
   get v() {
     const id = this.treeId ?? "_";
-    return (this.views[id] ??= { x: 0, y: 0, z: 1, fresh: true });
+    return (this.views[id] ??= { x: 0, y: 0, z: 1, inicial: true });
   }
   defaultActor() {
     const tok = canvas?.tokens?.controlled?.[0]?.actor;
@@ -190,12 +182,12 @@ export class ArvoreHabilidades extends ApplicationV2 {
     this.render();
   }
   undo() {
-    if (!this.undoStack.length) return ui.notifications.info(L("Nada para desfazer."));
+    if (!this.undoStack.length) return ui.notifications.info(loc("ARVORE.Janela.nadaParaDesfazer"));
     this.redoStack.push(this._lastSnap);
     this.restoreSnap(this.undoStack.pop());
   }
   redo() {
-    if (!this.redoStack.length) return ui.notifications.info(L("Nada para refazer."));
+    if (!this.redoStack.length) return ui.notifications.info(loc("ARVORE.Janela.nadaParaRefazer"));
     this.undoStack.push(this._lastSnap);
     this.restoreSnap(this.redoStack.pop());
   }
@@ -222,9 +214,9 @@ export class ArvoreHabilidades extends ApplicationV2 {
     if (rf?.direct.has(n.id)) cls.push("st-refsel");
     else if (rf?.extra.has(n.id)) cls.push("st-refdep");
     const tags = [st.key, ...n.features.map(f => f.kind), n.features.some(f => f.transform) ? "transform" : "", n.synergy ? "synergy" : ""].filter(Boolean).join(" ");
-    const tip = hidden ? L("??? — habilidade secreta") : [
-      n.name, st.max > 1 ? L`Nível ${st.rank}/${st.max}` : "",
-      st.rank < st.max && !n.synergy ? (st.cost ? `${st.cost} ${t.resLabel}` : L("Grátis")) : "",
+    const tip = hidden ? loc("ARVORE.Janela.habilidadeSecreta") : [
+      n.name, st.max > 1 ? `${loc("ARVORE.Janela.nivel", { rank: st.rank })}${st.max}` : "",
+      st.rank < st.max && !n.synergy ? (st.cost ? `${st.cost} ${t.resLabel}` : loc("ARVORE.Comum.gratis")) : "",
       ...st.reasons
     ].filter(Boolean).join("<br>");
     const badge = (c, txt, extra = "") => `<span class="st-badge-n ${c}" ${extra}>${txt}</span>`;
@@ -238,7 +230,7 @@ export class ArvoreHabilidades extends ApplicationV2 {
       ${st.key === "training" ? badge("st-train-b", `⏳${st.training.left}`) : !hidden && Number(n.trainDays) && st.rank < st.max && !(st.canBuy && st.rank > 0) ? badge("st-traind-b", `<i class="fas fa-dumbbell"></i>${n.trainDays}`) : ""}
       ${a && tempOf(a, t, n) ? badge("st-temp-b", `<i class="fas fa-hourglass-end"></i>`) : ""}
       ${!this.edit && st.rank > 0 && st.canBuy && !this.planning ? badge("st-up", "+") : ""}
-      ${this.gm && n.secret ? badge("st-eye", "👁", L('data-tooltip="Secreta para os jogadores"')) : ""}
+      ${this.gm && n.secret ? badge("st-eye", "👁", loc("ARVORE.Janela.dataTooltipSecretaParaOsJogadores")) : ""}
       ${rf && (rf.direct.has(n.id) || rf.extra.has(n.id)) ? badge("st-plan-b st-ref-b", rf.direct.has(n.id) ? "↺" : "↺ dep.") : ""}
       ${planIdx >= 0 ? badge("st-plan-b", `${planIdx + 1}${times > 1 ? ` ×${times}` : ""}`) : ""}
       <label style="top:${2 * r + 4}px">${esc(hidden ? "???" : n.name)}</label></div>`;
@@ -256,87 +248,87 @@ export class ArvoreHabilidades extends ApplicationV2 {
     if (this.refunding && (!a || !t || this.edit || !(this.gm || t.refundPlayer))) { this.refunding = false; this.refundSel.clear(); }
     this._refundCalc = this.refunding ? this.refundCalc(a, t) : null;
 
-    const treeOpts = trees.map(x => `<option value="${esc(x.id)}" ${x.id === this.treeId ? "selected" : ""}>${treeLock(a, x, this.trees) ? "🔒 " : ""}${esc(x.name)}${this.gm ? (a ? (canSee(x, a.id) ? " ✔" : L(" (não atribuída)")) : L` (${x.assigned?.length ?? 0} pers.)`) : ""}</option>`).join("");
+    const treeOpts = trees.map(x => `<option value="${esc(x.id)}" ${x.id === this.treeId ? "selected" : ""}>${treeLock(a, x, this.trees) ? "🔒 " : ""}${esc(x.name)}${this.gm ? (a ? (canSee(x, a.id) ? " ✔" : ` ${loc("ARVORE.Janela.naoAtribuida")}`) : ` ${loc("ARVORE.Janela.pers", { v: x.assigned?.length ?? 0 })}`) : ""}</option>`).join("");
     const nodesHTML = t ? t.nodes.map(n => this.nodeHTML(t, n, a)).join("") : "";
     const b = (act, label, extra = "") => `<button type="button" data-act="${act}" ${extra}>${label}</button>`;
     const grp = (label, html) => html.trim() ? `<span class="st-grp">${label ? `<em>${label}</em>` : ""}${html}</span>` : "";
     const pend = this.gm ? this.pendingReqs().length : 0;
 
-    const resSel = t && this.gm && t.rules !== "custom" ? L`<select data-sel="res" data-tooltip="O que é gasto para desbloquear nesta Skill Tree">${(() => {
+    const resSel = t && this.gm && t.rules !== "custom" ? `<select data-sel="res" data-tooltip="${loc("ARVORE.Janela.oQueEGastoParaDesbloquearNesta")}">${(() => {
       const pres = resPresets().filter(p => p.value !== "@custom"), known = !!presetOf(t.resPath);
       return pres.map(p => {
-        if (p.value === "@custom") return `<option value="@custom" ${known ? "" : "selected"}>${known ? L("Campo próprio…") : L`Próprio: ${esc(t.resLabel)}`}</option>`;
-        return L`<option value="${esc(p.value)}" ${p.value === t.resPath ? "selected" : ""}>Pontos: ${esc(p.label)}</option>`;
+        if (p.value === "@custom") return `<option value="@custom" ${known ? "" : "selected"}>${known ? loc("ARVORE.Janela.campoProprio") : `${loc("ARVORE.Janela.proprio")} ${esc(t.resLabel)}`}</option>`;
+        return `<option value="${esc(p.value)}" ${p.value === t.resPath ? "selected" : ""}>${loc("ARVORE.Janela.pontos")} ${esc(p.label)}</option>`;
       }).join("");
     })()}</select>` : "";
 
     let pill = "";
     if (t && a) {
       {
-        const tip = isSkill(t) ? L`data-tooltip="${CFG.ptsPerLevel} por nível (até o nível ${CFG.maxLevel}): ${skillEarned(a)} ganhos · ${Number(getProp(a, SKILL_SPENT)) || 0} gastos · ajuste do mestre ${Number(getProp(a, SKILL_BONUS)) || 0}"` : "";
-        pill = L`<span class="st-res" ${tip}>${esc(t.resLabel)}: <b>${resOf(a, t)}</b> · Nível ${actorLevel(a)}</span>`
-          + (treeHasMythic(t) ? L`<span class="st-res st-myth" data-tooltip="Pontos Míticos: ganhos com Grandes Feitos">✦ Míticos: <b>${mythicOf(a)}</b></span>` : "");
+        const tip = isSkill(t) ? loc("ARVORE.Janela.dataTooltipPorNivelAteONivel", { ptsPerLevel: CFG.ptsPerLevel, maxLevel: CFG.maxLevel, a: skillEarned(a), v: Number(getProp(a, SKILL_SPENT)) || 0, v2: Number(getProp(a, SKILL_BONUS)) || 0 }) : "";
+        pill = `<span class="st-res" ${tip}>${esc(t.resLabel)}: <b>${resOf(a, t)}</b> ${loc("ARVORE.Janela.nivel2")} ${actorLevel(a)}</span>`
+          + (treeHasMythic(t) ? `<span class="st-res st-myth" data-tooltip="${loc("ARVORE.Janela.pontosMiticosGanhosComGrandes")}">${loc("ARVORE.Janela.miticos")} <b>${mythicOf(a)}</b></span>` : "");
       }
     }
-    const chip = `<button type="button" class="st-chip" data-act="pickActor" data-tooltip="${this.gm ? L("Escolher o personagem (ou selecione um token)") : L("Seu personagem")}">
-      ${a ? `<img src="${esc(a.img)}" width="22" height="22" style="width:22px;height:22px;object-fit:cover;border-radius:50%;border:none">${esc(a.name)}` : `<i class="fas fa-user"></i> ${this.gm ? L("Escolher personagem") : L("Sem personagem")}`}</button>`;
+    const chip = `<button type="button" class="st-chip" data-act="pickActor" data-tooltip="${this.gm ? loc("ARVORE.Janela.escolherOPersonagemOuSelecione") : loc("ARVORE.Janela.seuPersonagem")}">
+      ${a ? `<img src="${esc(a.img)}" width="22" height="22" style="width:22px;height:22px;object-fit:cover;border-radius:50%;border:none">${esc(a.name)}` : `<i class="fas fa-user"></i> ${this.gm ? loc("ARVORE.Comum.escolherPersonagem") : loc("ARVORE.Janela.semPersonagem")}`}</button>`;
 
     const bar = `
       <header class="st-bar">
         ${grp("", `<div class="st-catwrap">
             <div class="st-cats">
               ${sections.map(c => `<button type="button" data-cat="${esc(c.id)}" class="${this.category === c.id ? "on" : ""}">${esc(c.name)} <span>${nCat(c.id)}</span></button>`).join("")}
-              ${this.gm ? b("addSection", "+", L('class="st-icon" data-tooltip="Criar seção"')) + b("renameSection", '<i class="fas fa-pen"></i>', L('class="st-icon" data-tooltip="Renomear seção atual"')) + (sections.length > 1 ? b("delSection", '<i class="fas fa-trash"></i>', L('class="st-icon st-trash" data-tooltip="Excluir seção atual"')) : "") : ""}
+              ${this.gm ? b("addSection", "+", loc("ARVORE.Janela.classStIconDataTooltipCriarSecao")) + b("renameSection", '<i class="fas fa-pen"></i>', loc("ARVORE.Janela.classStIconDataTooltipRenomear")) + (sections.length > 1 ? b("delSection", '<i class="fas fa-trash"></i>', loc("ARVORE.Janela.classStIconStTrashDataTooltip")) : "") : ""}
             </div>
-            <select data-sel="tree" data-tooltip="Skill Tree">${treeOpts || L('<option>— nenhuma Skill Tree —</option>')}</select>
+            <select data-sel="tree" data-tooltip="Skill Tree">${treeOpts || `<option>${loc("ARVORE.Janela.nenhumaSkillTree")}</option>`}</select>
           </div>${chip}`)}
-        ${grp("", `${resSel}${pill}${t && a && this.gm ? b("givePts", `±`, L`class="st-icon" data-tooltip="Dar ou tirar ${esc(t.resLabel)} de ${esc(a.name)}"`) : ""}`)}
-        ${t && a && !this.edit && (this.gm || t.refundPlayer) && unlockedOf(a, t).length ? b("refundMode", L`<i class="fas fa-rotate-left"></i> Reembolsar várias`, L`class="st-refbtn ${this.refunding ? "on" : ""}" data-tooltip="Escolha várias habilidades e reembolse todas de uma vez"`) : ""}
-        ${t && a && !this.edit ? b("plan", L`<i class="fas fa-route"></i> Planejar`, L`class="st-plan ${this.planning ? "on" : ""}" data-tooltip="Monte um caminho e veja o custo antes de gastar"`) : ""}
-        ${t && a && this.gm && (treeHasMythic(t) || t.feats.length) ? b("feat", L('<i class="fas fa-star"></i> Grande Feito'), L('class="st-feat" data-tooltip="Conceder Pontos Míticos por um Grande Feito"')) : ""}
-        ${this.gm && pend ? b("mesa", L`<i class="fas fa-bell"></i> Pedidos<span class="st-badge">${pend}</span>`, L('class="st-alert" data-tooltip="Pedidos de desbloqueio esperando você"')) : ""}
+        ${grp("", `${resSel}${pill}${t && a && this.gm ? b("givePts", `±`, loc("ARVORE.Janela.classStIconDataTooltipDarOuTirar", { resLabel: esc(t.resLabel), name: esc(a.name) })) : ""}`)}
+        ${t && a && !this.edit && (this.gm || t.refundPlayer) && unlockedOf(a, t).length ? b("refundMode", `<i class="fas fa-rotate-left"></i> ${loc("ARVORE.Comum.reembolsarVarias")}`, loc("ARVORE.Janela.classStRefbtnDataTooltipEscolha", { v: this.refunding ? "on" : "" })) : ""}
+        ${t && a && !this.edit ? b("plan", `<i class="fas fa-route"></i> ${loc("ARVORE.Comum.planejar")}`, loc("ARVORE.Janela.classStPlanDataTooltipMonteUm", { v: this.planning ? "on" : "" })) : ""}
+        ${t && a && this.gm && (treeHasMythic(t) || t.feats.length) ? b("feat", `<i class="fas fa-star"></i> ${loc("ARVORE.Comum.grandeFeito")}`, loc("ARVORE.Janela.classStFeatDataTooltipConceder")) : ""}
+        ${this.gm && pend ? b("mesa", `<i class="fas fa-bell"></i> ${loc("ARVORE.Janela.pedidos")}<span class="st-badge">${pend}</span>`, loc("ARVORE.Janela.classStAlertDataTooltipPedidos")) : ""}
         <span class="st-spacer"></span>
-        ${grp("", L`<input type="search" data-search placeholder="Buscar habilidade…" value="${esc(this.search)}"><select data-filter style="min-width:110px">${opts(FILTERS, this.filter)}</select>`)}
-        ${this.gm && ST.session ? L`<span class="st-auto" data-tooltip="Automações ativas nesta sessão"><i class="fas fa-bolt"></i></span>` : ""}
-        ${grp("", `${b("help", '<i class="fas fa-circle-question"></i>', L('class="st-icon" data-tooltip="Guia rápido"'))}${b("theme", '<i class="fas fa-palette"></i>', L('class="st-icon" data-tooltip="Tema de cores"'))}${b("center", '<i class="fas fa-expand"></i>', L('class="st-icon" data-tooltip="Centralizar a árvore"'))}${b("panel", `<i class="fas fa-table-columns"></i>`, `class="st-icon ${this.panelOpen ? "" : "on"}" data-tooltip="${this.panelOpen ? L("Esconder painel lateral (mais espaço)") : L("Mostrar painel lateral")}"`)}`)}
+        ${grp("", `<input type="search" data-search placeholder="${loc("ARVORE.Comum.buscarHabilidade")}" value="${esc(this.search)}"><select data-filter style="min-width:110px">${opts(FILTERS, this.filter)}</select>`)}
+        ${this.gm && ST.session ? `<span class="st-auto" data-tooltip="${loc("ARVORE.Janela.automacoesAtivasNestaSessao")}"><i class="fas fa-bolt"></i></span>` : ""}
+        ${grp("", `${b("help", '<i class="fas fa-circle-question"></i>', loc("ARVORE.Janela.classStIconDataTooltipGuiaRapido"))}${b("theme", '<i class="fas fa-palette"></i>', loc("ARVORE.Janela.classStIconDataTooltipTemaDe"))}${b("center", '<i class="fas fa-expand"></i>', loc("ARVORE.Janela.classStIconDataTooltipCentralizar"))}${b("panel", `<i class="fas fa-table-columns"></i>`, `class="st-icon ${this.panelOpen ? "" : "on"}" data-tooltip="${this.panelOpen ? loc("ARVORE.Janela.esconderPainelLateralMaisEspaco") : loc("ARVORE.Janela.mostrarPainelLateral")}"`)}`)}
       </header>
       ${this.gm ? `<header class="st-bar st-bar2">
         ${grp("Skill Tree", [
-          t ? b("treeCfg", L('<i class="fas fa-gear"></i> Esta Skill Tree'), L('data-tooltip="Nome, seção, custos, regras e visual desta Skill Tree"')) : "",
-          b("generalCfg", L('<i class="fas fa-sliders"></i> Gerais'), L('data-tooltip="Configurações de todas as Skill Trees, backup e Zerar Árvores"')),
-          b("addTree", '<i class="fas fa-plus"></i> Skill Tree', L('data-tooltip="Criar árvore nesta seção"')),
-          t ? b("validate", '<i class="fas fa-stethoscope"></i>', L('class="st-icon" data-tooltip="Verificar problemas nesta Skill Tree"')) : "",
-          t ? b("stats", '<i class="fas fa-chart-simple"></i>', L('class="st-icon" data-tooltip="Estatísticas: custo total, caminhos e nível necessário"')) : "",
-          t ? b("dupTree", '<i class="fas fa-clone"></i>', L('class="st-icon" data-tooltip="Duplicar esta Skill Tree"')) : "",
-          t ? b("export", '<i class="fas fa-download"></i>', L('class="st-icon" data-tooltip="Exportar pacote (árvore + itens usados)"')) : "",
-          b("import", '<i class="fas fa-upload"></i>', L('class="st-icon" data-tooltip="Importar (JSON ou pacote)"')),
-          t ? b("delTree", '<i class="fas fa-trash"></i>', L('class="st-icon st-trash" data-tooltip="Excluir esta Skill Tree"')) : ""
+          t ? b("treeCfg", `<i class="fas fa-gear"></i> ${loc("ARVORE.Comum.estaSkillTree")}`, loc("ARVORE.Janela.dataTooltipNomeSecaoCustosRegras")) : "",
+          b("generalCfg", `<i class="fas fa-sliders"></i> ${loc("ARVORE.Comum.gerais")}`, loc("ARVORE.Janela.dataTooltipConfiguracoesDeTodas")),
+          b("addTree", '<i class="fas fa-plus"></i> Skill Tree', loc("ARVORE.Janela.dataTooltipCriarArvoreNestaSecao")),
+          t ? b("validate", '<i class="fas fa-stethoscope"></i>', loc("ARVORE.Janela.classStIconDataTooltipVerificar")) : "",
+          t ? b("stats", '<i class="fas fa-chart-simple"></i>', loc("ARVORE.Janela.classStIconDataTooltipEstatisticas")) : "",
+          t ? b("dupTree", '<i class="fas fa-clone"></i>', loc("ARVORE.Janela.classStIconDataTooltipDuplicar")) : "",
+          t ? b("export", '<i class="fas fa-download"></i>', loc("ARVORE.Janela.classStIconDataTooltipExportar")) : "",
+          b("import", '<i class="fas fa-upload"></i>', loc("ARVORE.Janela.classStIconDataTooltipImportar")),
+          t ? b("delTree", '<i class="fas fa-trash"></i>', loc("ARVORE.Janela.classStIconStTrashDataTooltip2")) : ""
         ].join(""))}
-        ${this.edit ? `<span class="st-sep"></span>${grp(L("Habilidades"), [
-          b("addNode", L('<i class="fas fa-plus"></i> Nova'), L('data-tooltip="Criar uma habilidade no centro"')),
-          b("link", L('<i class="fas fa-link"></i> Ligar'), L`${this.linking ? 'class="on"' : ""} data-tooltip="Clique na anterior e depois na seguinte (ou Shift+clique)"`),
-          b("templates", L('<i class="fas fa-book-bookmark"></i> Modelos'), L('data-tooltip="Inserir um modelo salvo"'))
+        ${this.edit ? `<span class="st-sep"></span>${grp(loc("ARVORE.Comum.habilidades"), [
+          b("addNode", `<i class="fas fa-plus"></i> ${loc("ARVORE.Comum.nova")}`, loc("ARVORE.Janela.dataTooltipCriarUmaHabilidade")),
+          b("link", `<i class="fas fa-link"></i> ${loc("ARVORE.Comum.ligar")}`, `${this.linking ? 'class="on"' : ""} ${loc("ARVORE.Janela.dataTooltipCliqueNaAnteriorE")}`),
+          b("templates", `<i class="fas fa-book-bookmark"></i> ${loc("ARVORE.Comum.modelos")}`, loc("ARVORE.Janela.dataTooltipInserirUmModeloSalvo"))
         ].join(""))}
         ${grp("", [
-          b("undo", '<i class="fas fa-rotate-left"></i>', L`class="st-icon" data-tooltip="Desfazer (Ctrl+Z)" ${this.undoStack.length ? "" : "disabled"}`),
-          b("redo", '<i class="fas fa-rotate-right"></i>', L`class="st-icon" data-tooltip="Refazer (Ctrl+Y)" ${this.redoStack.length ? "" : "disabled"}`)
+          b("undo", '<i class="fas fa-rotate-left"></i>', `${loc("ARVORE.Janela.classStIconDataTooltipDesfazer")} ${this.undoStack.length ? "" : "disabled"}`),
+          b("redo", '<i class="fas fa-rotate-right"></i>', `${loc("ARVORE.Janela.classStIconDataTooltipRefazer")} ${this.redoStack.length ? "" : "disabled"}`)
         ].join(""))}` : ""}
         <span class="st-spacer"></span>
-        ${this.gm ? grp("", `${b("mesa", L('<i class="fas fa-users"></i> Mesa'), L('data-tooltip="Visão geral, recompensas, treino e NPCs"'))}${t ? b("assign", L('<i class="fas fa-user-plus"></i> Atribuir'), L('data-tooltip="Escolher quais personagens recebem esta Skill Tree"')) : ""}`) : ""}
-        ${this.gm ? b("mode", this.mode === "edit" ? L('<i class="fas fa-play"></i> Modo Jogo') : L('<i class="fas fa-pen"></i> Editar'), `class="st-mode ${this.mode === "edit" ? "on" : ""}" data-tooltip="${this.mode === "edit" ? L("Voltar a jogar") : L("Editar as habilidades no mapa")}"`) : ""}
+        ${this.gm ? grp("", `${b("mesa", `<i class="fas fa-users"></i> ${loc("ARVORE.Comum.mesa")}`, loc("ARVORE.Janela.dataTooltipVisaoGeralRecompensas"))}${t ? b("assign", `<i class="fas fa-user-plus"></i> ${loc("ARVORE.Comum.atribuir")}`, loc("ARVORE.Janela.dataTooltipEscolherQuaisPersonagens")) : ""}`) : ""}
+        ${this.gm ? b("mode", this.mode === "edit" ? `<i class="fas fa-play"></i> ${loc("ARVORE.Janela.modoJogo")}` : `<i class="fas fa-pen"></i> ${loc("ARVORE.Comum.editar")}`, `class="st-mode ${this.mode === "edit" ? "on" : ""}" data-tooltip="${this.mode === "edit" ? loc("ARVORE.Janela.voltarAJogar") : loc("ARVORE.Janela.editarAsHabilidadesNoMapa")}"`) : ""}
       </header>` : ""}`;
 
-    const hint = this.refunding ? L("Modo reembolso: clique nas habilidades desbloqueadas que quer devolver · clique de novo para tirar · Esc sai")
-      : this.planning ? L("Modo planejamento: clique nas habilidades na ordem em que quer comprar · clique de novo para tirar")
+    const hint = this.refunding ? loc("ARVORE.Janela.modoReembolsoCliqueNasHabilidades")
+      : this.planning ? loc("ARVORE.Janela.modoPlanejamentoCliqueNasHabilidades")
       : this.edit
-        ? (this.tool !== "select" ? L("Botão direito arrasta o mapa · roda do mouse = zoom · Esc volta para a seta")
-          : L("Arraste habilidades · Shift+clique liga · Ctrl+clique seleciona várias · Ctrl+C/V copia e cola · Ctrl+Z desfaz · Del exclui"))
-        : L("Arraste o fundo para mover · roda do mouse = zoom · clique numa habilidade para detalhes");
+        ? (this.tool !== "select" ? loc("ARVORE.Janela.botaoDireitoArrastaOMapaRoda")
+          : loc("ARVORE.Janela.arrasteHabilidadesShiftClique"))
+        : loc("ARVORE.Janela.arrasteOFundoParaMoverRodaDo");
     const catName = "Skill Tree";
     const empty = !t ? `<div class="st-empty">${this.gm
-      ? L("Crie uma Skill Tree em Editar → + Skill Tree ou importe um JSON.")
-      : (a ? L`Nenhum ${catName} atribuído a este personagem ainda.` : L("Selecione o seu token ou peça ao mestre para vincular um personagem a você."))}</div>`
-      : (!t.nodes.length ? `<div class="st-empty">${this.edit ? L("Clique em “Nova”, use um modelo ou solte um Item aqui.") : L("Skill Tree vazia.")}</div>` : "");
+      ? loc("ARVORE.Janela.crieUmaSkillTreeEmEditarSkill")
+      : (a ? loc("ARVORE.Janela.nenhumAtribuidoAEstePersonagem", { catName }) : loc("ARVORE.Janela.selecioneOSeuTokenOuPecaAoMestre"))}</div>`
+      : (!t.nodes.length ? `<div class="st-empty">${this.edit ? loc("ARVORE.Janela.cliqueEmNovaUseUmModeloOuSolte") : loc("ARVORE.Janela.skillTreeVazia")}</div>` : "");
     const bg = t?.bg ? `<div class="st-bgimg" style="background-image:url('${esc(t.bg)}');opacity:${Number(t.bgOpacity) || 0.35}"></div>` : "";
 
     return `<div class="st-root ${this.mode} ${this.edit ? `tool-${this.tool}` : ""} ${this.planning ? "planning" : ""} ${this.refunding ? "refunding" : ""}">
@@ -346,7 +338,7 @@ export class ArvoreHabilidades extends ApplicationV2 {
             ${bg}
             <div class="st-stage"><svg class="st-draw">${t ? this.drawingsSVG(t) : ""}</svg><svg class="st-lines"></svg>${nodesHTML}</div>
             ${this.edit && t ? this.toolboxHTML() : ""}
-            ${t && treeLock(a, t, this.trees) ? L`<div class="st-lockban"><i class="fas fa-lock"></i> ${a ? L("Skill Tree bloqueada") : L("Bloqueada até")} — liberada por <b>${esc(treeLock(a, t, this.trees))}</b></div>` : ""}
+            ${t && treeLock(a, t, this.trees) ? `<div class="st-lockban"><i class="fas fa-lock"></i> ${a ? loc("ARVORE.Janela.skillTreeBloqueada") : loc("ARVORE.Janela.bloqueadaAte")} ${loc("ARVORE.Janela.liberadaPor")} <b>${esc(treeLock(a, t, this.trees))}</b></div>` : ""}
             ${empty}<div class="st-hint">${hint}</div>
           </div>
           <aside class="st-panel">${await this.panelHTML()}</aside>
@@ -383,11 +375,11 @@ export class ArvoreHabilidades extends ApplicationV2 {
     try { await this.flushSave(); } catch { return []; }
     try {
       const rep = await fixOrphans(null, { trees: this.trees });
-      if (rep.length) ui.notifications.info(L`Pontos devolvidos e fichas limpas para ${rep.length} personagem(ns).`);
+      if (rep.length) ui.notifications.info(loc("ARVORE.Janela.pontosDevolvidosEFichasLimpas", { length: rep.length }));
       return rep;
     } catch (error) {
       console.error("Árvore da Mesa | limpeza", error);
-      ui.notifications.error(L("Falha ao corrigir pontos. A janela foi mantida aberta para conferir a ficha."));
+      ui.notifications.error(loc("ARVORE.Janela.falhaAoCorrigirPontosAJanela"));
       return [];
     }
   }
@@ -405,10 +397,10 @@ export class ArvoreHabilidades extends ApplicationV2 {
       try {
         const rep = await fixOrphans(null, { trees: loadTrees() });
         if (getData("pendingCleanup", false) === true) await setData("pendingCleanup", false);
-        if (rep.length) ui.notifications.info(L`Pontos devolvidos para ${rep.length} personagem(ns).`);
+        if (rep.length) ui.notifications.info(loc("ARVORE.Comum.pontosDevolvidosParaPersonagem", { length: rep.length }));
       } catch (error) {
-        console.error(L("Árvore da Mesa | limpeza de órfãos"), error);
-        ui.notifications.error(L("Falha ao corrigir pontos. A janela foi mantida aberta para conferir a ficha."));
+        console.error(loc("ARVORE.Janela.arvoreDaMesaLimpezaDeOrfaos"), error);
+        ui.notifications.error(loc("ARVORE.Janela.falhaAoCorrigirPontosAJanela"));
         return this;
       }
     }
@@ -426,7 +418,7 @@ export class ArvoreHabilidades extends ApplicationV2 {
 }
 
 // métodos de cada parte da janela (arquivos app-*.js)
-for (const Mix of [MixUndo, MixTools, MixWelcome, MixCanvas, MixPanel, MixEditor, MixDialogs, MixIo, MixActions]) {
+for (const Mix of [MixUndo, MixTools, MixWelcome, MixCanvas, MixPanel, MixEditor, MixDialogs, MixMesa, MixIo, MixActions]) {
   for (const k of Object.getOwnPropertyNames(Mix.prototype)) {
     if (k === "constructor") continue;
     Object.defineProperty(ArvoreHabilidades.prototype, k, Object.getOwnPropertyDescriptor(Mix.prototype, k));

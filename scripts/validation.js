@@ -1,42 +1,43 @@
+import { loc } from "./idioma.js";
 const object = value => !!value && typeof value === 'object' && !Array.isArray(value);
 const safeId = value => typeof value === 'string' && /^[a-zA-Z0-9_-]{1,128}$/.test(value) && !['__proto__','constructor','prototype'].includes(value);
 export function validateTrees(raw) {
   const trees = Array.isArray(raw) ? raw : [raw];
-  if (!trees.length || trees.length > 200) throw Error('Quantidade de árvores inválida (1 a 200).');
+  if (!trees.length || trees.length > 200) throw Error(loc("ARVORE.Validacao.quantidade"));
   const walk = (v, depth = 0) => {
-    if (depth > 50) throw Error('JSON excessivamente aninhado.');
+    if (depth > 50) throw Error(loc("ARVORE.Validacao.aninhado"));
     if (!v || typeof v !== 'object') return;
     for (const [k,x] of Object.entries(v)) {
-      if (['__proto__','constructor','prototype'].includes(k)) throw Error('Chave inválida no JSON.');
+      if (['__proto__','constructor','prototype'].includes(k)) throw Error(loc("ARVORE.Validacao.chave"));
       walk(x, depth + 1);
     }
   };
   walk(trees);
   for (const t of trees) {
-    if (!object(t) || !safeId(t.id) || typeof t.name !== 'string' || !t.name.trim()) throw Error('Árvore sem ID ou nome válido.');
-    if (!Array.isArray(t.nodes) || t.nodes.length > 10000 || !Array.isArray(t.edges)) throw Error('Nós ou conexões inválidos.');
+    if (!object(t) || !safeId(t.id) || typeof t.name !== 'string' || !t.name.trim()) throw Error(loc("ARVORE.Validacao.arvoreSemId"));
+    if (!Array.isArray(t.nodes) || t.nodes.length > 10000 || !Array.isArray(t.edges)) throw Error(loc("ARVORE.Validacao.nosConexoes"));
     const ids = new Set();
     for (const n of t.nodes) {
-      if (!object(n) || !safeId(n.id) || ids.has(n.id) || typeof n.name !== 'string') throw Error('Habilidade com ID duplicado/inválido ou nome inválido.');
+      if (!object(n) || !safeId(n.id) || ids.has(n.id) || typeof n.name !== 'string') throw Error(loc("ARVORE.Validacao.habilidadeId"));
       ids.add(n.id);
-      for (const k of ['x','y','cost','costGp','costPp','ranks','trainDays','size']) if (n[k] !== undefined && !Number.isFinite(Number(n[k]))) throw Error(`Valor numérico inválido: ${k}.`);
-      for (const k of ['items','features','changes','reqNodes','reqItems','consume','ingredients','reqClasses','rankDescs']) if (n[k] !== undefined && !Array.isArray(n[k])) throw Error(`Lista inválida: ${k}.`);
-      for (const k of ['features','changes','reqNodes','reqItems','consume','ingredients','reqClasses']) if (n[k]?.some(x => !object(x))) throw Error(`Entrada inválida em ${k}.`);
-      if (n.items?.some(x => typeof x !== 'string')) throw Error('Referência de item inválida.');
-      if (n.features?.some(f => f.kind !== undefined && !(typeof f.kind === 'string' && /^[a-z0-9_-]{1,32}$/.test(f.kind)))) throw Error('Tipo de habilidade inválido em features.');
+      for (const k of ['x','y','cost','costGp','costPp','ranks','trainDays','size']) if (n[k] !== undefined && !Number.isFinite(Number(n[k]))) throw Error(loc("ARVORE.Validacao.numero", { k }));
+      for (const k of ['items','features','changes','reqNodes','reqItems','consume','reqClasses','rankDescs']) if (n[k] !== undefined && !Array.isArray(n[k])) throw Error(loc("ARVORE.Validacao.lista", { k }));
+      for (const k of ['features','changes','reqNodes','reqItems','consume','reqClasses']) if (n[k]?.some(x => !object(x))) throw Error(loc("ARVORE.Validacao.entrada", { k }));
+      if (n.items?.some(x => typeof x !== 'string')) throw Error(loc("ARVORE.Validacao.item"));
+      if (n.features?.some(f => f.kind !== undefined && !(typeof f.kind === 'string' && /^[a-z0-9_-]{1,32}$/.test(f.kind)))) throw Error(loc("ARVORE.Validacao.tipo"));
     }
-    for (const e of t.edges) if (!object(e) || !ids.has(e.from) || !ids.has(e.to) || e.from === e.to) throw Error('Conexão aponta para habilidade inexistente ou para si mesma.');
+    for (const e of t.edges) if (!object(e) || !ids.has(e.from) || !ids.has(e.to) || e.from === e.to) throw Error(loc("ARVORE.Validacao.conexao"));
     // Kahn: rejeita ciclos sem recursão, inclusive em árvores grandes.
     const indegree = new Map([...ids].map(id => [id,0])), next = new Map([...ids].map(id => [id,[]]));
     for (const e of t.edges) { indegree.set(e.to,indegree.get(e.to)+1); next.get(e.from).push(e.to); }
     const queue = [...ids].filter(id => !indegree.get(id));
     for (let i=0;i<queue.length;i++) for (const id of next.get(queue[i])) { indegree.set(id,indegree.get(id)-1); if (!indegree.get(id)) queue.push(id); }
-    if (queue.length !== ids.size) throw Error('A árvore contém conexões cíclicas.');
-    for (const k of ['drawings','assigned']) if (t[k] !== undefined && !Array.isArray(t[k])) throw Error(`Lista inválida: ${k}.`);
+    if (queue.length !== ids.size) throw Error(loc("ARVORE.Validacao.ciclo"));
+    for (const k of ['drawings','assigned']) if (t[k] !== undefined && !Array.isArray(t[k])) throw Error(loc("ARVORE.Validacao.lista", { k }));
     for (const d of t.drawings ?? []) {
-      if (!object(d) || !safeId(d.id)) throw Error('Desenho inválido.');
-      for (const k of ['x','y','w','h','size','width']) if (d[k] !== undefined && !Number.isFinite(Number(d[k]))) throw Error('Coordenada inválida no desenho.');
-      if (d.type === 'path' && (!Array.isArray(d.points) || d.points.some(p => !Array.isArray(p) || p.length !== 2 || p.some(x => !Number.isFinite(Number(x)))))) throw Error('Traçado inválido.');
+      if (!object(d) || !safeId(d.id)) throw Error(loc("ARVORE.Validacao.desenho"));
+      for (const k of ['x','y','w','h','size','width']) if (d[k] !== undefined && !Number.isFinite(Number(d[k]))) throw Error(loc("ARVORE.Validacao.coordenada"));
+      if (d.type === 'path' && (!Array.isArray(d.points) || d.points.some(p => !Array.isArray(p) || p.length !== 2 || p.some(x => !Number.isFinite(Number(x)))))) throw Error(loc("ARVORE.Validacao.tracado"));
     }
   }
   return trees;

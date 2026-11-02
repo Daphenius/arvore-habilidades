@@ -3,30 +3,22 @@
 //  Métodos da janela ArvoreHabilidades (copiados para a classe em app.js)
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { L } from "./i18n.js?v=1.7.10";
+import { loc } from "./idioma.js";
 import {
-  ABILITIES, ACTIVATIONS, ApplicationV2, CFG, CHANGE_TYPES, DAMAGE_TYPES, DEFAULT_TYPE, DRAW_COLORS, DUR_UNITS,
-  DialogV2 as DialogBase, FEAT_KINDS, FILTERS, FP, KEY_HINTS, K_FEATS, K_LOG, K_MILES, K_MYTH, K_RANKS, K_REQ,
-  K_UNLOCK, MOD, RANK_FIELDS, RECOVERY, SHAPES, SIZES, SKILL_BONUS, SKILL_SPENT, ST, TE, 
-  actorLevel, addCharge, addLog, advanceTraining, box, canSee, cancelTraining, catOf, changeLabel,
-  chat, checkSynergies, clone, coin, countItem, doRefund, doUnlock, esc, featName, featsOf, featureDefaults,
-  featureRules, featureSummary, fixOrphans, getData, getProp, gmIds, grant, handleRequest, invalidateTrees, isMythic,
-  isSkill, isTyping, loadCatalog, loadTemplates, loadTrees, logOf, milestonesOf, mythicOf, newNode,
-  newTree, nodeById, nodeState, normalizeNode, normalizeTree, opts, orphanScan, ownersOf, parentsOf, payLabel, payOf,
-  pickRank, playerCharacters, rOf, rankEntry, rankOf, reqChecklist,
-  refundDependents, reqsOf, resOf, featDefaults, findFeat, hasFeat, trimFeats, treeLock, treesOpenedBy, playerSees, resPresets, presetOf, resPathOf, THEMES, applyTheme, extraRes, resPath, resFromPath, syncPrimary, nodeExtras, extraName, LABEL_DEFAULTS, labelsOf, coinsOn, RES_KINDS, sumExtras, addExtras, addRes, addCoins, coinWorth, resUpdate, revoke, saveCfg, saveFile, saveTemplates, saveTrees, sendRequest,
-  setData, skillAvail, skillEarned, stFlag, systemType, topoNodes, trainingOf, treeHasMythic, uid, unlockedOf,
-  whisperOwners, withRank, wouldCycle,
-  K_TEMP, tempsOf, tempOf, tempText, grantTemp, endTemp, today, dateText, calApi, syncShared, sharedCopies, SHARED_SKIP
-} from "./core.js?v=1.7.10";
-import { SaveQueue } from "./persistence.js?v=1.7.10";
-import { validateTrees, remapTree } from "./validation.js?v=1.7.10";
-import { actorOperation } from "./operations.js?v=1.7.10";
-import { DialogV2, charCard, whoSub, whoTools, wireWho, datePicker, readDate, wireDate } from "./ui-kit.js?v=1.7.10";
+  DRAW_COLORS, K_LOG, K_MILES, ST, TE, catOf, clone, esc, isTyping, newNode, nodeById, normalizeNode,
+  rOf, uid
+} from "./core.js";
+import { addLog, handleRequest, whisperOwners } from "./chat.js";
+import { addCharge } from "./hooks.js";
+import { milestonesOf, sharedCopies, today, unlockedOf, wouldCycle } from "./regras.js";
+import { endTemp } from "./temporarias.js";
+import { DialogV2, datePicker, readDate, wireDate } from "./ui-kit.js";
 
 export class MixCanvas {
   endPointerInteraction() { this._pointerEnd?.(); this._pointerEnd = null; }
 
+  // Liga "move" e "up" ao arrastar. Quem chama não remove nada: ao soltar (ou cancelar, ou a
+  // janela perder o foco), "finish" tira os ouvintes e chama "up" uma vez só.
   bindPointer(move, up) {
     this.endPointerInteraction();
     const finish = event => {
@@ -52,23 +44,23 @@ export class MixCanvas {
     const drawing = this.tool !== "select";
     return `<div class="st-tools ${this.toolsMin ? "min" : ""}">
       <div class="st-tgrp">
-        ${tb("select", "fas fa-arrow-pointer", L("Selecionar / mover habilidades"))}
-        ${tb("pencil", "fas fa-pencil", L("Lápis (desenho livre)"))}
-        ${tb("ellipse", "far fa-circle", L("Elipse (arraste; Shift = círculo)"))}
-        ${tb("text", "fas fa-font", L("Caixa de texto (clique no mapa)"))}
-        ${tb("erase", "fas fa-eraser", L("Borracha (clique ou arraste sobre o desenho)"))}
+        ${tb("select", "fas fa-arrow-pointer", loc("ARVORE.Mapa.selecionarMoverHabilidades"))}
+        ${tb("pencil", "fas fa-pencil", loc("ARVORE.Mapa.lapisDesenhoLivre"))}
+        ${tb("ellipse", "far fa-circle", loc("ARVORE.Mapa.elipseArrasteShiftCirculo"))}
+        ${tb("text", "fas fa-font", loc("ARVORE.Mapa.caixaDeTextoCliqueNoMapa"))}
+        ${tb("erase", "fas fa-eraser", loc("ARVORE.Mapa.borrachaCliqueOuArrasteSobre"))}
       </div>
       <div class="st-tgrp ${drawing ? "" : "dim"}">
-        <button type="button" class="st-curcolor ${this.paletteOpen ? "on" : ""}" data-palette data-tooltip="${L("Cor")}"><span style="--sw:${this.drawColor}"></span></button>
+        <button type="button" class="st-curcolor ${this.paletteOpen ? "on" : ""}" data-palette data-tooltip="${loc("ARVORE.Comum.cor")}"><span style="--sw:${this.drawColor}"></span></button>
         <div class="st-wbtns">${widths}</div>
-        <button type="button" data-drawfill class="${this.drawFill ? "on" : ""}" data-tooltip="${L("Preencher elipse")}"><i class="fas fa-fill-drip"></i></button>
+        <button type="button" data-drawfill class="${this.drawFill ? "on" : ""}" data-tooltip="${loc("ARVORE.Mapa.preencherElipse")}"><i class="fas fa-fill-drip"></i></button>
       </div>
       <div class="st-tgrp">
-        <button type="button" data-drawundo data-tooltip="${L("Desfazer último desenho")}"><i class="fas fa-rotate-left"></i></button>
-        <button type="button" data-drawclear class="st-trash" data-tooltip="${L("Apagar todos os desenhos")}"><i class="fas fa-trash"></i></button>
+        <button type="button" data-drawundo data-tooltip="${loc("ARVORE.Mapa.desfazerUltimoDesenho")}"><i class="fas fa-rotate-left"></i></button>
+        <button type="button" data-drawclear class="st-trash" data-tooltip="${loc("ARVORE.Mapa.apagarTodosOsDesenhos")}"><i class="fas fa-trash"></i></button>
       </div>
       ${this.paletteOpen ? `<div class="st-palpop"><div class="st-palette">${sw}</div>
-        <label class="st-palcustom"><input type="color" data-drawcolor value="${this.drawColor}"> ${L("Outra cor")}</label></div>` : ""}
+        <label class="st-palcustom"><input type="color" data-drawcolor value="${this.drawColor}"> ${loc("ARVORE.Mapa.outraCor")}</label></div>` : ""}
     </div>`;
   }
 
@@ -97,11 +89,11 @@ export class MixCanvas {
 
   async addText(p) {
     const data = await DialogV2.prompt({
-      window: { title: L("Caixa de texto") },
-      content: L`<div class="form-group stacked"><label>Texto</label><textarea name="txt" rows="4" style="width:100%" autofocus></textarea></div>
-        <div class="form-group"><label>Tamanho</label><input type="number" name="size" value="${this.textSize ?? 22}" min="8" max="200"></div>
-        <div class="form-group"><label>Negrito</label><input type="checkbox" name="bold"></div>`,
-      ok: { label: L("Adicionar"), callback: (e, btn) => ({ text: btn.form.elements.txt.value, size: Number(btn.form.elements.size.value) || 22, bold: btn.form.elements.bold.checked }) }
+      window: { title: loc("ARVORE.Mapa.caixaDeTexto") },
+      content: `<div class="form-group stacked"><label>${loc("ARVORE.Mapa.texto")}</label><textarea name="txt" rows="4" style="width:100%" autofocus></textarea></div>
+        <div class="form-group"><label>${loc("ARVORE.Comum.tamanho")}</label><input type="number" name="size" value="${this.textSize ?? 22}" min="8" max="200"></div>
+        <div class="form-group"><label>${loc("ARVORE.Mapa.negrito")}</label><input type="checkbox" name="bold"></div>`,
+      ok: { label: loc("ARVORE.Comum.adicionar"), callback: (e, btn) => ({ text: btn.form.elements.txt.value, size: Number(btn.form.elements.size.value) || 22, bold: btn.form.elements.bold.checked }) }
     });
     if (!data?.text?.trim()) return;
     this.textSize = data.size;
@@ -127,7 +119,7 @@ export class MixCanvas {
         erased = true;
       };
       apagar(ev);
-      const up = () => { window.removeEventListener("pointermove", apagar); window.removeEventListener("pointerup", up); if (erased) this.save(); };
+      const up = () => { if (erased) this.save(); };
       this.bindPointer(apagar, up);
       return;
     }
@@ -150,8 +142,6 @@ export class MixCanvas {
       tmp.innerHTML = this.drawingSVG(d);
     };
     const up = () => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
       tmp.remove();
       if (d.type === "ellipse" && (d.w < 3 || d.h < 3)) return;
       t.drawings.push(d);
@@ -166,7 +156,7 @@ export class MixCanvas {
     this.view$ = root.querySelector(".st-view");
     this.stage$ = root.querySelector(".st-stage");
     this.svg$ = root.querySelector(".st-lines");
-    if (this.v.fresh && (this.tree?.nodes.length || this.tree?.drawings?.length)) { requestAnimationFrame(() => this.fit()); this.v.fresh = false; }
+    if (this.v.inicial && (this.tree?.nodes.length || this.tree?.drawings?.length)) { requestAnimationFrame(() => this.fit()); this.v.inicial = false; }
     this.applyView();
     this.drawLines();
     this.applyFilter();
@@ -225,7 +215,7 @@ export class MixCanvas {
       n.rankDescs[Number(el.dataset.rdesc)] = el.value; this.save(); this.render();
     }));
     root.querySelectorAll("[data-delfeat]").forEach(el => el.addEventListener("click", async () => {
-      if (!await DialogV2.confirm({ window: { title: L("Remover habilidade da ficha") }, content: L("<p>Remover esta habilidade da ficha desta habilidade da árvore?</p>") })) return;
+      if (!await DialogV2.confirm({ window: { title: loc("ARVORE.Mapa.removerHabilidadeDaFicha") }, content: `<p>${loc("ARVORE.Mapa.removerEstaHabilidadeDaFicha")}</p>` })) return;
       this.selNode.features.splice(Number(el.dataset.delfeat), 1); this.save(); this.render();
     }));
     root.querySelectorAll("details[data-sec]").forEach(el => el.addEventListener("toggle", () => {
@@ -272,9 +262,9 @@ export class MixCanvas {
       let g = ev.target.value;
       if (g === "@new") {
         g = await DialogV2.prompt({
-          window: { title: L("Novo grupo de escolha exclusiva") },
-          content: L`<p>Dê um nome ao grupo. Depois coloque as outras habilidades alternativas nele.</p><input name="g" placeholder="ex.: Caminho final" autofocus style="width:100%">`,
-          ok: { label: L("Criar"), callback: (e, btn) => btn.form.elements.g.value.trim() }
+          window: { title: loc("ARVORE.Mapa.novoGrupoDeEscolhaExclusiva") },
+          content: `<p>${loc("ARVORE.Mapa.deUmNomeAoGrupoDepoisColoque")}</p><input name="g" placeholder="${loc("ARVORE.Mapa.exCaminhoFinal")}" autofocus style="width:100%">`,
+          ok: { label: loc("ARVORE.Mapa.criar"), callback: (e, btn) => btn.form.elements.g.value.trim() }
         });
         if (!g) return this.render();
       }
@@ -292,16 +282,16 @@ export class MixCanvas {
       const left = sharedCopies(this.trees, n.shared, n.id);
       n.shared = ""; if (left.length === 1) left[0].n.shared = "";
       this.save(); this.render();
-      ui.notifications.info(L("Agora esta habilidade é independente."));
+      ui.notifications.info(loc("ARVORE.Mapa.agoraEstaHabilidadeEIndependente"));
     });
     root.querySelectorAll("[data-reqdate]").forEach(el => el.addEventListener("click", async e => {
       e.preventDefault(); const n = this.selNode; if (!n) return;
       if (el.dataset.reqdate === "off") { n.reqDate = null; this.save(); return this.render(); }
       const td = await DialogV2.prompt({
-        window: { title: L("Data do calendário"), icon: "fas fa-calendar-day" },
-        content: `<div class="st-c"><p class="st-c-lead">${L`<b>${esc(n.name)}</b> só pode ser desbloqueada a partir desta data.`}</p>${datePicker("d", n.reqDate ?? today() + 7)}</div>`,
+        window: { title: loc("ARVORE.Comum.dataDoCalendario"), icon: "fas fa-calendar-day" },
+        content: `<div class="st-c"><p class="st-c-lead">${`<b>${esc(n.name)}</b> ${loc("ARVORE.Mapa.soPodeSerDesbloqueadaAPartir")}`}</p>${datePicker("d", n.reqDate ?? today() + 7)}</div>`,
         render: (ev, dlg) => { if (dlg.element?.querySelector) wireDate(dlg.element); },
-        ok: { label: L("Salvar"), callback: (ev, btn) => readDate(btn.form, "d") }, rejectClose: false
+        ok: { label: loc("ARVORE.Comum.salvar"), callback: (ev, btn) => readDate(btn.form, "d") }, rejectClose: false
       });
       if (td === null || td === undefined) return;
       n.reqDate = td; this.save(); this.render();
@@ -309,7 +299,7 @@ export class MixCanvas {
     root.querySelectorAll("[data-tempkeep]").forEach(el => el.addEventListener("click", async e => { e.preventDefault(); const a = this.actorDoc; if (a) { await endTemp(a, el.dataset.tempkeep, { keep: true }); this.render(); } }));
     root.querySelectorAll("[data-tempend]").forEach(el => el.addEventListener("click", async e => {
       e.preventDefault(); const a = this.actorDoc; if (!a) return;
-      if (!await DialogV2.confirm({ window: { title: L("Remover agora") }, content: `<p>${L("Tirar agora esta habilidade temporária do personagem?")}</p>`, rejectClose: false })) return;
+      if (!await DialogV2.confirm({ window: { title: loc("ARVORE.Comum.removerAgora") }, content: `<p>${loc("ARVORE.Mapa.tirarAgoraEstaHabilidadeTemporaria")}</p>`, rejectClose: false })) return;
       await endTemp(a, el.dataset.tempend); this.render();
     }));
     root.querySelectorAll("[data-goto]").forEach(el => el.addEventListener("click", () => {
@@ -324,7 +314,7 @@ export class MixCanvas {
       const a = this.actorDoc; if (!a) return;
       const m = el.dataset.mile, list = milestonesOf(a).filter(x => x !== m);
       const upd = { [K_MILES]: list };
-      if (el.checked) { list.push(m); upd[K_LOG] = addLog(a, { act: "mile", nodeName: m }); whisperOwners(a, L`🏆 <b>${esc(a.name)}</b> alcançou o marco <b>${esc(m)}</b>.`); }
+      if (el.checked) { list.push(m); upd[K_LOG] = addLog(a, { act: "mile", nodeName: m }); whisperOwners(a, `🏆 <b>${esc(a.name)}</b> ${loc("ARVORE.Comum.alcancouOMarco")} <b>${esc(m)}</b>.`); }
       a.update(upd);
     }));
 
@@ -341,7 +331,7 @@ export class MixCanvas {
     root.querySelector("[data-drawundo]")?.addEventListener("click", () => { if (this.tree?.drawings.length) { this.tree.drawings.pop(); this.save(); this.redrawDrawings(); } });
     root.querySelector("[data-drawclear]")?.addEventListener("click", async () => {
       if (!this.tree?.drawings.length) return;
-      if (!await DialogV2.confirm({ window: { title: L("Apagar desenhos") }, content: L("<p>Apagar todos os desenhos e textos desta Skill Tree?</p>") })) return;
+      if (!await DialogV2.confirm({ window: { title: loc("ARVORE.Mapa.apagarDesenhos") }, content: `<p>${loc("ARVORE.Mapa.apagarTodosOsDesenhosETextos")}</p>` })) return;
       this.tree.drawings = []; this.save(); this.redrawDrawings();
     });
     if (!this._keyBound) {
@@ -504,8 +494,6 @@ export class MixCanvas {
       }
     };
     const up = e => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
       if (n && moved && canDrag) return this.save();
       if (!moved && e?.type === "pointerup") {
         if (n) this.onNodeClick(n, e);
@@ -527,7 +515,7 @@ export class MixCanvas {
     if (this.edit && (this.linking || ev.shiftKey)) {
       if (!this.linkFrom) {
         this.linkFrom = n.id;
-        ui.notifications.info(L`Pré-requisito: "${n.name}". Agora clique na habilidade que depende dela.`);
+        ui.notifications.info(loc("ARVORE.Mapa.preRequisitoAgoraCliqueNaHabilidade", { name: n.name }));
         return this.render();
       }
       if (this.linkFrom === n.id) { this.linkFrom = null; return this.render(); }
@@ -536,7 +524,7 @@ export class MixCanvas {
       if (i >= 0) t.edges.splice(i, 1);
       else {
         t.edges = t.edges.filter(e => !(e.from === to && e.to === from));
-        if (wouldCycle(t, from, to)) { ui.notifications.warn(L("Essa ligação criaria um ciclo.")); this.linkFrom = null; return this.render(); }
+        if (wouldCycle(t, from, to)) { ui.notifications.warn(loc("ARVORE.Mapa.essaLigacaoCriariaUmCiclo")); this.linkFrom = null; return this.render(); }
         t.edges.push({ from, to });
       }
       this.linkFrom = null; this.save(); return this.render();
@@ -547,8 +535,8 @@ export class MixCanvas {
 
   async dropItem(ev) {
     let data;
-    try { data = TE.getDragEventData(ev); } catch { try { data = JSON.parse(ev.dataTransfer.getData("text/plain")); } catch { } }
-    if (data?.type !== "Item" || !data.uuid) { ui.notifications.warn(L("Solte um Item (da barra lateral ou de um compêndio).")); return null; }
+    try { data = TE.getDragEventData(ev); } catch { try { data = JSON.parse(ev.dataTransfer.getData("text/plain")); } catch { /* não é um item: o aviso abaixo explica */ } }
+    if (data?.type !== "Item" || !data.uuid) { ui.notifications.warn(loc("ARVORE.Mapa.solteUmItemDaBarraLateralOuDe")); return null; }
     return fromUuid(data.uuid);
   }
 
@@ -560,7 +548,7 @@ export class MixCanvas {
     if (nodeEl) {
       const n = nodeById(this.tree, nodeEl.dataset.id);
       n.items.push(item.uuid); this.sel = n.id;
-      ui.notifications.info(L`"${item.name}" adicionado a "${n.name}".`);
+      ui.notifications.info(loc("ARVORE.Mapa.adicionadoA", { name: item.name, name2: n.name }));
     } else {
       const p = this.toStage(ev);
       const n = newNode(this.snapV(p.x), this.snapV(p.y), {
@@ -586,14 +574,14 @@ export class MixCanvas {
   copyNodes(ids) {
     const t = this.tree;
     const nodes = ids.map(id => nodeById(t, id)).filter(Boolean).map(n => clone(n));
-    if (!nodes.length) return ui.notifications.warn(L("Selecione habilidades (clique ou Ctrl+clique) para copiar."));
+    if (!nodes.length) return ui.notifications.warn(loc("ARVORE.Mapa.selecioneHabilidadesCliqueOu"));
     const set = new Set(nodes.map(n => n.id));
     const cx = nodes.reduce((s, n) => s + n.x, 0) / nodes.length, cy = nodes.reduce((s, n) => s + n.y, 0) / nodes.length;
     ST.clipboard = {
       nodes: nodes.map(n => ({ ...n, x: n.x - cx, y: n.y - cy })),
       edges: t.edges.filter(e => set.has(e.from) && set.has(e.to)).map(e => ({ ...e }))
     };
-    ui.notifications.info(L`${nodes.length} habilidade(s) copiada(s).`);
+    ui.notifications.info(`${nodes.length} ${loc("ARVORE.Mapa.habilidadeSCopiadaS")}`);
     this.render();
   }
 
