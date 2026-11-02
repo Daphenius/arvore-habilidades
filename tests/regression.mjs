@@ -35,7 +35,7 @@ function actor(){
 function tree(){const n=core.newNode(0,0,{name:'Ability',cost:3}); const t=core.newTree('Test');t.resPath='system.resources.mana.value';t.nodes=[n];return{t,n};}
 await test('queue keeps latest snapshot and serializes writes',async()=>{const calls=[],gate=defer();const q=new SaveQueue(async v=>{calls.push(v);if(calls.length===1)await gate.promise;});q.stage([1]);const p=q.flush();q.stage([2]);q.stage([3]);assert.equal(calls.length,1);gate.resolve();await p;assert.deepEqual(calls,[[1],[3]]);assert.equal(q.dirty,false);});
 await test('failed save remains pending and can retry',async()=>{let fails=true;const q=new SaveQueue(async()=>{if(fails)throw Error('disk');});q.stage([1]);await assert.rejects(q.flush());assert.equal(q.dirty,true);fails=false;await q.flush();assert.equal(q.dirty,false);});
-await test('example trees in "Exemplo de Arvores" validate',()=>{const d='Exemplo de Arvores';const files=fs.readdirSync(d).filter(f=>f.endsWith('.json'));assert.ok(files.length>=3);for(const f of files)validateTrees(JSON.parse(fs.readFileSync(`${d}/${f}`)));});
+await test('example trees in "Exemplo de Arvores" validate',()=>{const d=new URL('../Exemplo de Arvores/',import.meta.url);const files=fs.readdirSync(d).filter(f=>f.endsWith('.json'));assert.ok(files.length>=3);for(const f of files)validateTrees(JSON.parse(fs.readFileSync(new URL(f,d))));});
 await test('invalid IDs, cycles and drawing coordinates rejected',()=>{const {t,n}=tree();t.nodes.push({...n});assert.throws(()=>validateTrees(t));t.nodes.pop();t.edges=[{from:n.id,to:n.id}];assert.throws(()=>validateTrees(t));t.edges=[];t.drawings=[{id:'ok',type:'path',points:[['" onload="x',0]]}];assert.throws(()=>validateTrees(t));});
 await test('copy remaps internal requirements and preserves external links',()=>{const {t,n}=tree();n.reqNodes=[{tree:t.id,node:n.id},{tree:'external',node:'other'}];const copy=remapTree(t,'new',new Map([[n.id,'newNode']]));assert.deepEqual(copy.nodes[0].reqNodes,[{tree:'new',node:'newNode'},{tree:'external',node:'other'}]);assert.equal(t.nodes[0].id,n.id);});
 await test('old potion trees become ordinary point trees, keep IDs, section and progress data',()=>{const {t,n}=tree();t.mode='sequence';t.sanPath='x';t.acting=[{name:'a',value:5}];n.seq='9';n.ingredients=[{name:'erva'}];n.digestReq=50;const id=t.id;
@@ -459,5 +459,98 @@ await test('old preset fields are dropped when a tree is read',()=>{
  const m=core.normalizeTree(structuredClone(t));
  assert(!('preset' in m));assert(!('presetKey' in m.nodes[0]));assert(!('ingredients' in m.nodes[0]));assert.equal(m.nodes[0].id,n.id);
  validateTrees({...t,nodes:[{...n,ingredients:'not a list'}]}); // campo antigo não impede importar
+});
+// ── correções da revisão de 2/11/2026 (1.11.1) ──
+const useTrees=(...ts)=>{const settings={trees:{list:ts}};game.settings.get=(m,k)=>settings[k];game.settings.set=async(m,k,v)=>settings[k]=v;core.invalidateTrees();for(const t of ts)t.assigned=[...(t.assigned??[])];return()=>{game.settings.get=()=>undefined;core.invalidateTrees();};};
+const coins=(a,gp,pp)=>{a.system.currency.gp=gp;a.system.currency.pp=pp;};
+const addItem=async(a,name,system,extra={})=>(await a.createEmbeddedDocuments('Item',[{name,type:'loot',system,...extra}]))[0];
+const unlocked=(a,t,n)=>core.rankOf(a,t,n);
+await test('coins: PO and PP are paid from one plan; platinum set aside for PP never pays gold',async()=>{
+ const {t,n}=tree();n.costGp=10;n.costPp=1;const done=useTrees(t);
+ const a=actor();coins(a,0,1);a.system.resources.mana.value=10;
+ assert.equal(core.coinPlan(0,1,10,1).ok,false);assert.equal(core.coinPlan(10,1,10,1).ok,true);assert.deepEqual(core.coinPlan(0,2,10,1),{ok:true,gp:0,pp:0});
+ assert.equal(core.nodeState(a,t,n).canBuy,false,'0 PO + 1 PL does not pay 10 PO + 1 PL');
+ assert.equal(await core.doUnlock(a,t,n),false);
+ assert.deepEqual(a.system.currency,{gp:0,pp:1});assert.equal(a.system.resources.mana.value,10);assert.equal(unlocked(a,t,n),0,'no side effects');
+ // mesmo forçando a gravação, o pagamento pela metade é recusado
+ assert.throws(()=>core.spendCoins({},a,10,1));
+ const b=actor();coins(b,10,1);assert.equal(await core.doUnlock(b,t,n),true);assert.deepEqual(b.system.currency,{gp:0,pp:0});assert.equal(b.system.resources.mana.value,7);
+ const c=actor();coins(c,0,2);assert.equal(await core.doUnlock(c,t,n),true);assert.deepEqual(c.system.currency,{gp:0,pp:0},'1 PP for the cost, 1 PP broken into 10 GP');
+ const d=actor();coins(d,3,2);assert.equal(await core.doUnlock(d,t,n),true);assert.deepEqual(d.system.currency,{gp:3,pp:0},'change comes back in gold');
+ done();
+});
+await test('coins: a Gold tree adds its main cost to the extra PO and keeps the PP aside',async()=>{
+ const {t,n}=tree();t.resPath=core.COINS;n.cost=5;n.costGp=10;n.costPp=1;const done=useTrees(t);
+ const a=actor();coins(a,0,2);
+ assert.equal(core.nodeState(a,t,n).canBuy,false,'15 PO + 1 PL with 2 PL');assert.equal(await core.doUnlock(a,t,n),false);assert.deepEqual(a.system.currency,{gp:0,pp:2});
+ const b=actor();coins(b,0,3);assert.equal(await core.doUnlock(b,t,n),true);assert.deepEqual(b.system.currency,{gp:5,pp:0});
+ const c=actor();coins(c,4,1);n.costGp=0;assert.equal(core.nodeState(c,t,n).canBuy,false,'main cost 5 with 4 PO, the 1 PL is for the PP cost');
+ const e=actor();coins(e,15,1);n.costGp=10;assert.equal(await core.doUnlock(e,t,n),true);assert.deepEqual(e.system.currency,{gp:0,pp:0});
+ // refund gives back what was paid
+ assert.equal(await core.doRefund(e,t,n),true);assert.equal(unlocked(e,t,n),0);
+ done();
+});
+await test('coins: training charges the same combined plan',async()=>{
+ const {t,n}=tree();n.costGp=10;n.costPp=1;n.trainDays=1;const done=useTrees(t);
+ const a=actor();coins(a,0,1);assert.equal(await core.doUnlock(a,t,n),false);assert.equal(core.trainingOf(a).length,0);assert.deepEqual(a.system.currency,{gp:0,pp:1});
+ const b=actor();coins(b,0,2);assert.equal(await core.doUnlock(b,t,n),true);assert.equal(core.trainingOf(b).length,1);assert.deepEqual(b.system.currency,{gp:0,pp:0});
+ done();
+});
+await test('items: quantity zero, negative or invalid is no unit; missing quantity is one unit',async()=>{
+ const q=v=>core.itemQty({system:v===undefined?{}:{quantity:v}});
+ assert.equal(q(undefined),1);assert.equal(q(null),1);assert.equal(q(0),0);assert.equal(q(3),3);assert.equal(q(-2),0);assert.equal(q('abc'),0);assert.equal(q(''),0);assert.equal(q(Infinity),0);assert.equal(q('2'),2);
+ const {t,n}=tree();n.consume=[{name:'Erva',qty:1}];const done=useTrees(t);
+ const a=actor();await addItem(a,'Erva',{quantity:0});
+ assert.equal(core.countItem(a,{name:'Erva'}),0);assert.equal(core.nodeState(a,t,n).canBuy,false);assert.equal(await core.doUnlock(a,t,n),false);assert.equal(a.items.size,1);
+ const b=actor();await addItem(b,'Erva',{});assert.equal(await core.doUnlock(b,t,n),true);assert.equal(b.items.filter(i=>i.name==='Erva').length,0,'item without quantity is consumed whole');
+ const c=actor();const pile=await addItem(c,'Erva',{quantity:5});n.consume=[{name:'Erva',qty:2}];assert.equal(await core.doUnlock(c,t,n),true);assert.equal(c.items.get(pile.id).system.quantity,3,'partial stack');
+ const d=actor();await addItem(d,'Erva',{quantity:1});n.consume=[{name:'Erva',qty:1}];assert.equal(await core.doUnlock(d,t,n),true);assert.equal(d.items.filter(i=>i.name==='Erva').length,0,'last unit removes the item');
+ const e=actor();await addItem(e,'Erva',{quantity:-1});await addItem(e,'Erva',{quantity:'x'});assert.equal(core.countItem(e,{name:'Erva'}),0);assert.equal(await core.doUnlock(e,t,n),false);
+ done();
+});
+await test('items: repeated or overlapping requirements never reuse the same unit',async()=>{
+ const {t,n}=tree();n.consume=[{name:'Erva',qty:1},{name:'Erva',qty:1}];const done=useTrees(t);
+ const a=actor();await addItem(a,'Erva',{quantity:1});
+ assert.equal(core.nodeState(a,t,n).canBuy,false,'one unit for two requirements');assert.equal(await core.doUnlock(a,t,n),false);assert.equal(a.items.size,1);
+ const b=actor();const p=await addItem(b,'Erva',{quantity:3});assert.equal(await core.doUnlock(b,t,n),true);assert.equal(b.items.get(p.id).system.quantity,1,'exactly two consumed');
+ const c=actor();await addItem(c,'Erva',{quantity:1});await addItem(c,'erva',{quantity:1});assert.equal(await core.doUnlock(c,t,n),true);assert.equal(c.items.size,0,'two different stacks');
+ // por nome e por UUID apontando para o mesmo item
+ n.consume=[{name:'Erva',qty:1},{name:'Herb',uuid:'Compendium.x.Item.h',qty:1}];
+ const d=actor();await addItem(d,'Erva',{quantity:1},{_stats:{compendiumSource:'Compendium.x.Item.h'}});
+ assert.equal(core.consumePlan(d,n.consume).ok,false);assert.equal(await core.doUnlock(d,t,n),false);assert.equal(d.items.size,1);
+ await addItem(d,'Herb',{quantity:1},{_stats:{compendiumSource:'Compendium.x.Item.h'}});assert.equal(await core.doUnlock(d,t,n),true);assert.equal(d.items.size,0);
+ done();
+});
+await test('items: a shortage found while paying throws and the protected operation undoes the purchase',async()=>{
+ const a=actor();await addItem(a,'Erva',{quantity:1});
+ await assert.rejects(core.consumeItems(a,[{name:'Erva',qty:2}]));assert.equal(a.items.size,1,'nothing consumed');
+ a.system.resources.mana.value=10;
+ await assert.rejects(actorOperation(a,async tx=>{await tx.update({'system.resources.mana.value':4});await core.consumeItems(tx,[{name:'Erva',qty:1},{name:'Erva',qty:1}]);}));
+ assert.equal(a.system.resources.mana.value,10,'payment rolled back');assert.equal(a.items.size,1);
+});
+await test('temporary: a failure while ending keeps the record, the rank and the effect; success removes both',async()=>{
+ const {t,n}=tree();n.changes=[{key:'system.attributes.ac.bonus',value:'1',type:'add'}];const done=useTrees(t);
+ const a=actor();assert.equal(await core.grantTemp(a,t,n,{kind:'rests',left:1}),true);
+ const id=core.tempsOf(a)[0].id;assert.equal(unlocked(a,t,n),1);assert.equal(a.effects.size,1);
+ const del=a.deleteEmbeddedDocuments;let fail=true;a.deleteEmbeddedDocuments=async(...x)=>{if(fail){fail=false;throw Error('delete failed');}return del(...x);};
+ await assert.rejects(core.endTemp(a,id));
+ assert.equal(core.tempsOf(a).length,1,'record kept');assert.equal(unlocked(a,t,n),1,'rank kept');assert.equal(a.effects.size,1,'effect kept');
+ assert.equal(core.rankEntry(a,t,n).paidX.at(-1).temp,id,'still marked temporary');
+ a.failUpdate=true;await assert.rejects(core.endTemp(a,id));
+ assert.equal(core.tempsOf(a).length,1);assert.equal(unlocked(a,t,n),1);assert.equal(a.effects.size,1,'effect restored after a failed rank update');
+ // a expiração por descanso tenta de novo e agora encerra
+ await core.tickTemps(a,{rest:true});
+ assert.equal(core.tempsOf(a).length,0);assert.equal(unlocked(a,t,n),0);assert.equal(a.effects.size,0);
+ done();
+});
+await test('temporary: keep makes it permanent in one operation, and a failure keeps it temporary',async()=>{
+ const {t,n}=tree();const done=useTrees(t);
+ const a=actor();await core.grantTemp(a,t,n,{kind:'rests',left:2});const id=core.tempsOf(a)[0].id;
+ a.failUpdate=true;await assert.rejects(core.endTemp(a,id,{keep:true}));
+ assert.equal(core.tempsOf(a).length,1);assert.equal(core.rankEntry(a,t,n).paidX.at(-1).temp,id);
+ assert.equal(await core.endTemp(a,id,{keep:true}),true);
+ assert.equal(core.tempsOf(a).length,0);assert.equal(unlocked(a,t,n),1);assert.equal(core.rankEntry(a,t,n).paidX.at(-1).temp,undefined,'mark removed, rank stays');
+ await core.tickTemps(a,{rest:true});assert.equal(unlocked(a,t,n),1,'no longer expires');
+ done();
 });
 console.log(`TOTAL: ${count} passed`);

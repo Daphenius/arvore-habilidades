@@ -186,6 +186,31 @@ export function coinsDelta(upd, a, delta) {
   upd[GP] = gp; upd[PP] = pp;
   return upd;
 }
+// Plano de pagamento em moedas, calculado num saldo provisório antes de gravar.
+// A PL exigida sai só da platina e fica reservada; o ouro sai do ouro e, se faltar, da platina
+// que sobrou (1 PL = 10 PO), com o troco em ouro. Uma moeda nunca paga dois custos.
+export function coinPlan(gp, pp, gold = 0, plat = 0) {
+  gp = Math.max(0, Number(gp) || 0); pp = Math.max(0, Number(pp) || 0);
+  gold = Math.max(0, Number(gold) || 0); plat = Math.max(0, Number(plat) || 0);
+  if (pp < plat) return { ok: false, gp, pp };
+  const restPp = pp - plat;
+  if (gp >= gold) return { ok: true, gp: gp - gold, pp: restPp };
+  const need = gold - gp, broken = Math.ceil(need / 10);
+  if (broken > restPp) return { ok: false, gp, pp };
+  return { ok: true, gp: broken * 10 - need, pp: restPp - broken };
+}
+export const canPayCoins = (a, gold, plat) => coinPlan(coin(a, "gp"), coin(a, "pp"), gold, plat).ok;
+// Desconta de uma vez ouro e platina em `upd` (sobre o que já foi alterado nele). Sem saldo, lança erro
+// e a operação protegida desfaz o resto: nunca grava um pagamento pela metade.
+export function spendCoins(upd, a, gold = 0, plat = 0) {
+  if (!(Number(gold) > 0) && !(Number(plat) > 0)) return upd;
+  const p = coinPlan(upd[GP] ?? coin(a, "gp"), upd[PP] ?? coin(a, "pp"), gold, plat);
+  if (!p.ok) throw new Error(loc("ARVORE.Regras.moedasInsuficientes", { gold: Number(gold) || 0, plat: Number(plat) || 0 }));
+  upd[GP] = p.gp; upd[PP] = p.pp;
+  return upd;
+}
+// Ouro que a compra pede no total: o custo principal (árvore em Ouro) mais os PO extras da habilidade.
+export const goldNeeded = (a, t, n, cost) => (isCoins(t) && !isMythic(n) ? Number(cost) || 0 : 0) + (coinsOn(t) ? Number(n.costGp) || 0 : 0);
 // custos extras em moedas (PO/PL da habilidade). Ouro que faltar é pago com platina.
 export function addCoins(upd, a, gp = 0, pp = 0) {
   if (gp) coinsDelta(upd, a, gp);
@@ -197,18 +222,50 @@ export const coin = (a, k) => Number(a?.system?.currency?.[k]) || 0;
 
 // Itens da ficha por nome (quantidade)
 export const sameName = (i, nm) => i.name.toLowerCase() === String(nm ?? "").toLowerCase();
-export const countItem = (a, it) => a.items.filter(i => sameName(i, it.name) || (it.uuid && i._stats?.compendiumSource === it.uuid))
-  .reduce((s, i) => s + (Number(i.system?.quantity ?? 1) || 1), 0);
-export async function consumeItems(a, list) {
-  for (const it of list) {
-    let need = Number(it.qty) || 1;
-    for (const i of a.items.filter(x => sameName(x, it.name) || (it.uuid && x._stats?.compendiumSource === it.uuid))) {
+// Quantidade de um item da ficha. Sem o campo quantity (item que não empilha) conta como 1 unidade.
+// Zero, negativo ou valor que não é número = nenhuma unidade. Usada na conferência e no consumo.
+export function itemQty(i) {
+  const q = i?.system?.quantity;
+  if (q === undefined || q === null) return 1;
+  const v = typeof q === "string" && !q.trim() ? NaN : Number(q);
+  return Number.isFinite(v) && v > 0 ? Math.floor(v) : 0;
+}
+export const itemMatches = (i, it) => sameName(i, it.name) || (!!it.uuid && i._stats?.compendiumSource === it.uuid);
+export const itemNeed = it => Number(it?.qty) || 1;
+export const countItem = (a, it) => a.items.filter(i => itemMatches(i, it)).reduce((s, i) => s + itemQty(i), 0);
+// Plano de consumo para a lista inteira: cada unidade da ficha serve a uma exigência só, mesmo com
+// exigências repetidas ou que apontam para o mesmo item por nome e por UUID. Na ordem da lista.
+export function consumePlan(a, list) {
+  const left = new Map(a.items.map(i => [i.id, itemQty(i)]));
+  const take = new Map(), lines = [];
+  for (const it of list ?? []) {
+    let need = itemNeed(it);
+    const want = need;
+    for (const i of a.items.filter(x => itemMatches(x, it))) {
       if (need <= 0) break;
-      const q = Number(i.system?.quantity ?? 1) || 1, take = Math.min(q, need);
-      need -= take;
-      if (q - take <= 0) await a.deleteEmbeddedDocuments("Item", [i.id]); else await a.updateEmbeddedDocuments("Item", [{ _id: i.id, "system.quantity": q - take }]);
+      const q = Math.min(left.get(i.id) ?? 0, need);
+      if (q <= 0) continue;
+      left.set(i.id, left.get(i.id) - q); take.set(i.id, (take.get(i.id) ?? 0) + q); need -= q;
     }
+    lines.push({ it, want, got: want - need, ok: need <= 0 });
   }
+  return { ok: lines.every(l => l.ok), lines, take, left };
+}
+// Consome os itens de uma vez. Se faltar qualquer unidade agora, lança erro antes de mexer na ficha
+// (dentro de actorOperation, o que já foi gravado na compra é desfeito).
+export async function consumeItems(a, list) {
+  const plan = consumePlan(a, list);
+  if (!plan.ok) {
+    const miss = plan.lines.filter(l => !l.ok).map(l => `${l.it.name} (${l.got}/${l.want})`).join(", ");
+    throw new Error(loc("ARVORE.Regras.itensInsuficientes", { itens: miss }));
+  }
+  const del = [], upd = [];
+  for (const [id, q] of plan.take) {
+    const i = a.items.get?.(id) ?? a.items.find(x => x.id === id);
+    if (plan.left.get(id) <= 0) del.push(id); else upd.push({ _id: id, "system.quantity": itemQty(i) - q });
+  }
+  if (upd.length) await a.updateEmbeddedDocuments("Item", upd);
+  if (del.length) await a.deleteEmbeddedDocuments("Item", del);
 }
 
 // Requisitos
@@ -264,10 +321,13 @@ export function reqChecklist(a, t, n, un = [], rank = 0) {
   if (n.milestone) add(`${loc("ARVORE.Regras.marco")} ${n.milestone}`, () => milestonesOf(a).includes(n.milestone));
   if (n.reqDate !== null && n.reqDate !== undefined) add(`${loc("ARVORE.Regras.aPartirDe")} ${dateText(n.reqDate)}`, () => today() >= n.reqDate);
   {
-    if (coinsOn(t) && Number(n.costGp)) add(`${loc("ARVORE.Regras.custoPo", { costGp: n.costGp })}${a ? ` ${loc("ARVORE.Regras.voceTemEmOuroEPlatina", { a: coinWorth(a) })}` : ""}`, () => coinWorth(a) - (isCoins(t) ? effCost(a, t, n, rankOf(a, t, n)) : 0) >= Number(n.costGp), "cost");
+    // ouro e platina conferidos juntos: a PL fica reservada e não completa o ouro
+    if (coinsOn(t) && Number(n.costGp)) add(`${loc("ARVORE.Regras.custoPo", { costGp: n.costGp })}${a ? ` ${loc("ARVORE.Regras.voceTemEmOuroEPlatina", { a: coinWorth(a) })}` : ""}`, () => canPayCoins(a, goldNeeded(a, t, n, effCost(a, t, n, rankOf(a, t, n))), Number(n.costPp) || 0), "cost");
     if (coinsOn(t) && Number(n.costPp)) add(`${loc("ARVORE.Regras.custoPl", { costPp: n.costPp })}${a ? ` ${loc("ARVORE.Regras.voceTem", { a: coin(a, "pp") })}` : ""}`, () => coin(a, "pp") >= Number(n.costPp), "cost");
     for (const [p, v] of Object.entries(nodeExtras(t, n))) add(`${loc("ARVORE.Regras.custo2")} ${v} ${extraName(t, p)}${a ? ` ${loc("ARVORE.Regras.voceTem2", { v: Number(getProp(a, p)) || 0 })}` : ""}`, () => (Number(getProp(a, p)) || 0) >= v, "cost");
-    for (const it of n.consume) add(`${loc("ARVORE.Regras.consome", { v: Number(it.qty) || 1 })} ${it.name}${a ? ` ${loc("ARVORE.Regras.voceTem", { a: countItem(a, it) })}` : ""}`, () => countItem(a, it) >= (Number(it.qty) || 1), "cost");
+    // consumo conferido para a lista inteira: exigências repetidas não usam a mesma unidade duas vezes
+    const plan = a ? consumePlan(a, n.consume) : null;
+    n.consume.forEach((it, i) => add(`${loc("ARVORE.Regras.consome", { v: itemNeed(it) })} ${it.name}${a ? ` ${loc("ARVORE.Regras.voceTem", { a: countItem(a, it) })}` : ""}`, () => !!plan?.lines[i]?.ok, "cost"));
   }
   return LIST;
 }
@@ -288,7 +348,7 @@ export function nodeState(a, t, n) {
     return { key: rank > 0 ? "unlocked" : "locked", reasons: [loc("ARVORE.Regras.sinergiaLiberaSozinhaQuandoOs"), ...reasons], checks, rank, max, cost: 0, canBuy: false, synergy: true };
   }
   const res = payOf(a, t, n);
-  const poorMain = res < cost;
+  const poorMain = isCoins(t) && !isMythic(n) ? !canPayCoins(a, cost, coinsOn(t) ? Number(n.costPp) || 0 : 0) : res < cost;
   const poor = poorMain || costFail.length > 0;
   const canBuy = !reasons.length && !poor;
   const key = rank > 0 ? "unlocked" : reasons.length ? "locked" : poor ? "poor" : "available";

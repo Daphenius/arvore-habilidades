@@ -12,9 +12,9 @@ import { stFlag } from "./hooks.js";
 import { grant, revoke } from "./itens.js";
 import { actorOperation } from "./operations.js";
 import {
-  addCoins, addPay, addResDesc, checkAllSynergies, checkSynergies, consumeItems, isMythic, isSkill,
-  logOf, mythicOf, nodeState, payBack, rankEntry, rankOf, ranksOf, refundIndex, reqsOf, resDesc,
-  trainingOf, unlockedOf
+  addCoins, addPay, addResDesc, checkAllSynergies, checkSynergies, consumeItems, isCoins, isMythic,
+  isSkill, logOf, mythicOf, nodeState, payBack, rankEntry, rankOf, ranksOf, refundIndex, reqsOf,
+  resDesc, spendCoins, trainingOf, unlockedOf
 } from "./regras.js";
 import { tempsOf } from "./temporarias.js";
 
@@ -27,6 +27,14 @@ export async function doUnlock(a, t, n, options = {}, token) {
   return result;
 }
 // temp: registro de habilidade temporária (grantTemp) — entra na mesma gravação da compra
+// Cobra uma compra em `upd`: o custo principal e as moedas extras. Ouro e platina saem de um plano
+// só (spendCoins), inclusive quando o recurso principal da árvore é Ouro; falta de saldo lança erro.
+function payNow(upd, a, t, n, cost, gp, pp) {
+  const coinsMain = isCoins(t) && !isMythic(n);
+  if (cost && !coinsMain) addPay(upd, a, t, n, -cost);
+  spendCoins(upd, a, (coinsMain ? cost : 0) + gp, pp);
+  return upd;
+}
 async function unlock(a, t, n, { free = false, paid = null, quiet = false, temp = null } = {}) {
   if (!a || !t || !n) return false;
   const st = nodeState(a, t, n);
@@ -45,9 +53,7 @@ async function unlock(a, t, n, { free = false, paid = null, quiet = false, temp 
       [K_TRAIN]: [...trainingOf(a), { id: uid(), tree: t.id, node: n.id, left: Number(n.trainDays), cost, gp, pp, ex, res, myth: isMythic(n), at: Date.now() }],
       [K_LOG]: addLog(a, { tree: t.id, treeName: t.name, node: n.id, nodeName: n.name, act: "train", cost })
     };
-    addPay(upd, a, t, n, -cost);
-    if (gp) addCoins(upd, a, -gp);
-    if (pp) addCoins(upd, a, 0, -pp);
+    payNow(upd, a, t, n, cost, gp, pp);
     addExtras(upd, a, ex, -1);
     await a.update(upd);
     if (n.consume.length) await consumeItems(a, n.consume);
@@ -68,12 +74,10 @@ async function unlock(a, t, n, { free = false, paid = null, quiet = false, temp 
     [K_LOG]: addLog(a, { tree: t.id, treeName: t.name, node: n.id, nodeName: n.name, act: temp ? "temp" : free && !paid ? "grant" : "unlock", rank: newRank, cost })
   };
   if (temp) upd[K_TEMP] = [...tempsOf(a), temp];
-  if (cost && !paid) addPay(upd, a, t, n, -cost);
   if (!free) {
-    if (gp) addCoins(upd, a, -gp);
-    if (pp) addCoins(upd, a, 0, -pp);
+    payNow(upd, a, t, n, cost, gp, pp);
     addExtras(upd, a, ex, -1);
-  }
+  } else if (cost && !paid) addPay(upd, a, t, n, -cost);
   const reqs = reqsOf(a);
   const reqsLeft = reqs.filter(r => !(r.tree === t.id && r.node === n.id));
   if (reqsLeft.length !== reqs.length) upd[K_REQ] = reqsLeft;

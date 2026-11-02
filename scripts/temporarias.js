@@ -46,22 +46,25 @@ async function removeRank(a, t, n, tempId) {
   await a.update({ [K_UNLOCK(t.id)]: entry.r > 0 ? un : un.filter(id => id !== n.id), [K_RANKS(t.id)]: ranks });
   if (entry.r > 0) await grant(a, t, n, entry.r);
 }
+// Encerra uma temporária. O registro em K_TEMP só sai na mesma operação (com recuperação) que tira o
+// nível e os documentos concedidos: se algo falhar, tudo volta, inclusive o registro, e a expiração
+// tenta de novo depois. keep = true torna a habilidade permanente (tira só a marca de temporária).
 export async function endTemp(a, tempId, { keep = false, quiet = false } = {}) {
-  const list = tempsOf(a), e = list.find(x => x.id === tempId);
+  const e = tempsOf(a).find(x => x.id === tempId);
   if (!e) return false;
-  await a.update({ [K_TEMP]: list.filter(x => x.id !== tempId) });
+  const t = getTrees().find(x => x.id === e.tree), n = nodeById(t, e.node);
+  const dropMark = tx => tx.update({ [K_TEMP]: tempsOf(tx).filter(x => x.id !== tempId) });
   if (keep) {
-    // vira permanente: tira a marca de temporário do registro do nível
-    const t = getTrees().find(x => x.id === e.tree);
-    if (t) { const ranks = ranksOf(a, t); let hit = false; for (const r of ranks) for (const x of r.paidX ?? []) if (x?.temp === tempId) { delete x.temp; hit = true; } if (hit) await a.update({ [K_RANKS(t.id)]: ranks }); }
+    await actorOperation(a, async tx => {
+      if (t) { const ranks = ranksOf(tx, t); let hit = false; for (const r of ranks) for (const x of r.paidX ?? []) if (x?.temp === tempId) { delete x.temp; hit = true; } if (hit) await tx.update({ [K_RANKS(t.id)]: ranks }); }
+      await dropMark(tx);
+    });
     return true;
   }
-  const t = getTrees().find(x => x.id === e.tree), n = nodeById(t, e.node);
-  if (t && n) {
-    await actorOperation(a, tx => removeRank(tx, t, n, e.id));
-    await checkSynergies(a, t, true);
-    if (!quiet) whisperOwners(a, `${loc("ARVORE.Regras.oEfeitoTemporarioDe")} <b>${esc(n.name)}</b> ${loc("ARVORE.Regras.acabouPara")} <b>${esc(a.name)}</b>.`, "#d2a25e");
-  }
+  if (!t || !n) { await actorOperation(a, dropMark); return true; } // árvore ou habilidade já não existe: só limpa o registro
+  await actorOperation(a, async tx => { await removeRank(tx, t, n, e.id); await dropMark(tx); });
+  await checkSynergies(a, t, true);
+  if (!quiet) whisperOwners(a, `${loc("ARVORE.Regras.oEfeitoTemporarioDe")} <b>${esc(n.name)}</b> ${loc("ARVORE.Regras.acabouPara")} <b>${esc(a.name)}</b>.`, "#d2a25e");
   return true;
 }
 // descanso longo: conta 1; data: confere o dia
@@ -74,7 +77,11 @@ export async function tickTemps(a, { rest = false } = {}) {
     if (e.kind === "date" && e.until !== null && now >= e.until) end.push(e.id);
   }
   if (changed) await a.update({ [K_TEMP]: list });
-  for (const id of end) await endTemp(a, id);
+  // uma falha não impede as outras; a que falhou continua registrada e é tentada de novo
+  for (const id of end) {
+    try { await endTemp(a, id); }
+    catch (err) { console.error("Árvore da Mesa | fim da habilidade temporária", err); ui.notifications.error(loc("ARVORE.Regras.falhaAoEncerrarTemporaria", { name: a.name })); }
+  }
 }
 // Um descanso longo para o personagem: avança o treino e conta as temporárias por descanso
 export async function longRest(a) {

@@ -10,7 +10,7 @@ Se encontrar bugs ou tiver sugestões, abra uma issue. Todo retorno é bem-vindo
 
 ---
 
-**Versão 1.11.0** · Foundry VTT 14 · D&D 5e 6 · Português e English · Licença MIT · ✅ Testado no Foundry VTT e D&D 5e
+**Versão 1.11.1** · Foundry VTT 14 · D&D 5e 6 · Português e English · Licença MIT · ✅ Testado no Foundry VTT e D&D 5e
 
 ![Árvore da Mesa no Foundry VTT](<docs/Arvore de Habilidades Completa.png>)
 
@@ -392,7 +392,7 @@ A definição das funcionalidades, as decisões do projeto e os testes dentro do
 
 Por que a opção *Secreta* não esconde os dados de verdade: avaliado na 1.11.0. Para isso, as árvores teriam de sair da configuração do mundo e chegar a cada jogador pelo mestre (socket), só com as habilidades que aquele personagem pode ver. Mas o que fica visível muda a cada compra, nível, item ou Grande Feito, e o computador do jogador precisa da árvore inteira para conferir requisitos entre árvores, sinergias e montar os itens na compra. Seria preciso o mestre estar sempre conectado (hoje o jogador compra sozinho) e mexer no caminho das compras, que é a parte mais testada do módulo. Ficou o aviso.
 
-Testes automáticos: `node tests/regression.mjs` (precisa só do Node 20 ou mais novo). Verificação do código: `npx eslint scripts/`. Depois de mover funções entre arquivos, `node tools/arrumar-imports.mjs --gravar` refaz os imports (antes, `cd tools && npm i`).
+Testes automáticos: `node tests/regression.mjs` na pasta do repositório (ou `node arvore-habilidades/tests/regression.mjs` da pasta de cima; precisa só do Node 20 ou mais novo). Termina com `TOTAL: N passed` e código de saída 0. Os testes rodam num Foundry simulado: não substituem o teste no Foundry de verdade. Verificação do código: `npx eslint scripts/`. Depois de mover funções entre arquivos, `node tools/arrumar-imports.mjs --gravar` refaz os imports (antes, `cd tools && npm i`).
 
 ---
 

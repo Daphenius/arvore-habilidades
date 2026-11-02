@@ -296,11 +296,12 @@ export class MixCanvas {
       if (td === null || td === undefined) return;
       n.reqDate = td; this.save(); this.render();
     }));
-    root.querySelectorAll("[data-tempkeep]").forEach(el => el.addEventListener("click", async e => { e.preventDefault(); const a = this.actorDoc; if (a) { await endTemp(a, el.dataset.tempkeep, { keep: true }); this.render(); } }));
+    root.querySelectorAll("[data-tempkeep]").forEach(el => el.addEventListener("click", async e => { e.preventDefault(); const a = this.actorDoc; if (a) { try { await endTemp(a, el.dataset.tempkeep, { keep: true }); } catch (err) { console.error("Árvore da Mesa | tornar permanente", err); ui.notifications.error(loc("ARVORE.Regras.falhaAoEncerrarTemporaria", { name: a.name })); } this.render(); } }));
     root.querySelectorAll("[data-tempend]").forEach(el => el.addEventListener("click", async e => {
       e.preventDefault(); const a = this.actorDoc; if (!a) return;
       if (!await DialogV2.confirm({ window: { title: loc("ARVORE.Comum.removerAgora") }, content: `<p>${loc("ARVORE.Mapa.tirarAgoraEstaHabilidadeTemporaria")}</p>`, rejectClose: false })) return;
-      await endTemp(a, el.dataset.tempend); this.render();
+      try { await endTemp(a, el.dataset.tempend); } catch (err) { console.error("Árvore da Mesa | remover temporária", err); ui.notifications.error(loc("ARVORE.Regras.falhaAoEncerrarTemporaria", { name: a.name })); }
+      this.render();
     }));
     root.querySelectorAll("[data-goto]").forEach(el => el.addEventListener("click", () => {
       const [tid, nid] = el.dataset.goto.split(":"); const tr = this.trees.find(x => x.id === tid); if (!tr) return;

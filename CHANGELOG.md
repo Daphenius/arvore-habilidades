@@ -1,5 +1,16 @@
 # Histórico de versões — Árvore da Mesa
 
+## 1.11.1
+
+Correções de uma revisão externa do código (2/11/2026).
+
+- **Ouro e platina juntos:** uma habilidade que custava, por exemplo, 10 PO + 1 PL podia ser comprada com só 1 PL. A platina contava duas vezes: para completar o ouro e para pagar os PL; ao descontar, o que faltava virava zero sem recusar a compra. Agora ouro e platina saem de um plano só: os PL ficam reservados, o ouro sai do ouro e, se faltar, da platina que sobrou (1 PL = 10 PO, troco em ouro), e a compra é recusada se não der. Vale também para árvores cujo recurso principal é Ouro e para o treino.
+- **Item com quantidade 0:** um item com quantidade 0 na ficha contava como 1 e pagava o consumo. Agora 0, negativo ou valor inválido não contam; item sem campo de quantidade (que não empilha) continua contando como 1.
+- **Consumos repetidos:** uma habilidade que pede "1 Erva" duas vezes era liberada com uma Erva só, e só uma era gasta. Agora o consumo é planejado para a lista inteira: cada unidade paga uma exigência só, inclusive quando duas exigências apontam para o mesmo item pelo nome e pelo compêndio. Se faltar item na hora de pagar, a compra inteira é desfeita.
+- **Fim de habilidade temporária:** se a retirada da habilidade falhasse no meio, o registro da temporária já tinha sido apagado, e a habilidade ficava para sempre na ficha. Agora o registro, o nível e os itens/efeitos saem juntos; se algo falhar, tudo volta e a expiração tenta de novo no próximo descanso ou data. "Tornar permanente" também ficou numa operação só. Uma falha numa temporária não impede as outras de expirar, e o mestre recebe um aviso.
+- **Testes:** a 1.11.0 publicada ainda tinha o arquivo antigo `scripts/i18n.js` (sem uso desde a 1.9.0), e por isso a suíte de testes parava no teste de idioma. O arquivo sai nesta versão. Os testes também rodam a partir de qualquer pasta. São 61 testes, 8 novos para estas correções.
+- Nenhuma mudança no formato dos dados das árvores ou dos personagens.
+
 ## 1.11.0
 
 - **Erros não somem mais em silêncio:** vários pontos (som ao subir de nível, animação da transformação, data do Calendário da Mesa, leitura das configurações, tema, guia de boas-vindas) engoliam qualquer erro sem deixar rastro. Agora eles avisam no console (F12) com "Árvore da Mesa | …", o que ajuda a achar a causa se algo não funcionar.
