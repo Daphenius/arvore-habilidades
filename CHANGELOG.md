@@ -1,5 +1,10 @@
 # Histórico de versões — Árvore da Mesa
 
+## 1.11.2
+
+- **Ordem dos consumos não bloqueia mais uma compra válida:** com uma Erva comum e uma Erva rara na ficha, uma habilidade que pedia "uma Erva qualquer" + "a Erva rara" era recusada se a exigência genérica viesse primeiro na lista: ela pegava a rara, e depois faltava a rara. Agora o módulo procura uma divisão das unidades que pague todas as exigências (se ela existir, é encontrada), em qualquer ordem. Continua valendo que cada unidade paga uma exigência só e que nada é concedido sem pagar.
+- Testes: 63. Um reproduz o caso acima nas duas ordens; outro compara o plano de consumo com uma busca exaustiva em 3.000 casos sorteados.
+
 ## 1.11.1
 
 Correções de uma revisão externa do código (2/11/2026).

@@ -10,7 +10,7 @@ Se encontrar bugs ou tiver sugestões, abra uma issue. Todo retorno é bem-vindo
 
 ---
 
-**Versão 1.11.1** · Foundry VTT 14 · D&D 5e 6 · Português e English · Licença MIT · ✅ Testado no Foundry VTT e D&D 5e
+**Versão 1.11.2** · Foundry VTT 14 · D&D 5e 6 · Português e English · Licença MIT · ✅ Testado no Foundry VTT e D&D 5e
 
 ![Árvore da Mesa no Foundry VTT](<docs/Arvore de Habilidades Completa.png>)
 

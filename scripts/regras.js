@@ -234,21 +234,37 @@ export const itemMatches = (i, it) => sameName(i, it.name) || (!!it.uuid && i._s
 export const itemNeed = it => Number(it?.qty) || 1;
 export const countItem = (a, it) => a.items.filter(i => itemMatches(i, it)).reduce((s, i) => s + itemQty(i), 0);
 // Plano de consumo para a lista inteira: cada unidade da ficha serve a uma exigência só, mesmo com
-// exigências repetidas ou que apontam para o mesmo item por nome e por UUID. Na ordem da lista.
+// exigências repetidas ou que apontam para o mesmo item por nome e por UUID. A distribuição não depende
+// da ordem da lista: é um fluxo máximo (exigências → itens que servem → estoque de cada item), então
+// uma exigência genérica nunca "rouba" a unidade que só uma exigência mais restrita pode usar.
+// Se existe alguma distribuição que paga tudo, ela é encontrada.
 export function consumePlan(a, list) {
-  const left = new Map(a.items.map(i => [i.id, itemQty(i)]));
-  const take = new Map(), lines = [];
-  for (const it of list ?? []) {
-    let need = itemNeed(it);
-    const want = need;
-    for (const i of a.items.filter(x => itemMatches(x, it))) {
-      if (need <= 0) break;
-      const q = Math.min(left.get(i.id) ?? 0, need);
-      if (q <= 0) continue;
-      left.set(i.id, left.get(i.id) - q); take.set(i.id, (take.get(i.id) ?? 0) + q); need -= q;
+  const reqs = (list ?? []).map(it => ({ it, want: itemNeed(it) }));
+  const items = a.items.filter(i => itemQty(i) > 0);
+  const R = reqs.length, I = items.length, S = R + I, T = S + 1, N = T + 1;
+  const cap = Array.from({ length: N }, () => new Array(N).fill(0));
+  reqs.forEach((r, k) => {
+    cap[S][k] = r.want;
+    items.forEach((i, j) => { if (itemMatches(i, r.it)) cap[k][R + j] = r.want; });
+  });
+  items.forEach((i, j) => { cap[R + j][T] = itemQty(i); });
+  const flow = Array.from({ length: N }, () => new Array(N).fill(0));
+  // caminhos aumentantes mais curtos (Edmonds–Karp); as listas aqui são pequenas
+  for (;;) {
+    const prev = new Array(N).fill(-1); prev[S] = S;
+    const queue = [S];
+    for (let q = 0; q < queue.length && prev[T] < 0; q++) {
+      const u = queue[q];
+      for (let v = 0; v < N; v++) if (prev[v] < 0 && cap[u][v] - flow[u][v] > 0) { prev[v] = u; queue.push(v); }
     }
-    lines.push({ it, want, got: want - need, ok: need <= 0 });
+    if (prev[T] < 0) break;
+    let push = Infinity;
+    for (let v = T; v !== S; v = prev[v]) push = Math.min(push, cap[prev[v]][v] - flow[prev[v]][v]);
+    for (let v = T; v !== S; v = prev[v]) { flow[prev[v]][v] += push; flow[v][prev[v]] -= push; }
   }
+  const take = new Map(), left = new Map(a.items.map(i => [i.id, itemQty(i)]));
+  items.forEach((i, j) => { const q = flow[R + j][T]; if (q > 0) { take.set(i.id, q); left.set(i.id, itemQty(i) - q); } });
+  const lines = reqs.map((r, k) => ({ it: r.it, want: r.want, got: flow[S][k], ok: flow[S][k] >= r.want }));
   return { ok: lines.every(l => l.ok), lines, take, left };
 }
 // Consome os itens de uma vez. Se faltar qualquer unidade agora, lança erro antes de mexer na ficha

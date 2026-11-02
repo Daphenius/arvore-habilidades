@@ -553,4 +553,44 @@ await test('temporary: keep makes it permanent in one operation, and a failure k
  await core.tickTemps(a,{rest:true});assert.equal(unlocked(a,t,n),1,'no longer expires');
  done();
 });
+await test('items: the order of requirements never blocks a purchase that the stock can pay',async()=>{
+ const rare='Compendium.x.Item.rara',common='Compendium.x.Item.comum';
+ const {t,n}=tree();const done=useTrees(t);
+ const generic={name:'Erva',qty:1},specific={name:'Erva Rara',uuid:rare,qty:1};
+ for(const order of [[generic,specific],[specific,generic]]){
+  n.consume=order.map(x=>({...x}));
+  const a=actor();await addItem(a,'Erva',{quantity:1},{_stats:{compendiumSource:rare}});await addItem(a,'Erva',{quantity:1},{_stats:{compendiumSource:common}});
+  assert.equal(core.consumePlan(a,n.consume).ok,true,'a valid split exists');
+  assert.equal(core.nodeState(a,t,n).canBuy,true);
+  assert.equal(await core.doUnlock(a,t,n),true);assert.equal(a.items.size,0,'both units used, each for one requirement');
+  // só a comum na ficha: a rara não pode ser paga com ela
+  const b=actor();await addItem(b,'Erva',{quantity:2},{_stats:{compendiumSource:common}});
+  const plan=core.consumePlan(b,n.consume);assert.equal(plan.ok,false);
+  assert.deepEqual(plan.lines.map(l=>l.ok),n.consume.map(x=>!x.uuid),'the specific requirement is the one missing');
+  assert.equal(await core.doUnlock(b,t,n),false);assert.equal(b.items.size,1);
+ }
+ // pilhas e quantidades maiores: 3 genéricas + 2 raras com 2 raras e 3 comuns
+ n.consume=[{name:'Erva',qty:3},{name:'Erva Rara',uuid:rare,qty:2}];
+ const c=actor();const r=await addItem(c,'Erva',{quantity:2},{_stats:{compendiumSource:rare}});const k=await addItem(c,'Erva',{quantity:3},{_stats:{compendiumSource:common}});
+ assert.equal(await core.doUnlock(c,t,n),true);assert.equal(c.items.size,0);
+ const d=actor();await addItem(d,'Erva',{quantity:2},{_stats:{compendiumSource:rare}});await addItem(d,'Erva',{quantity:2},{_stats:{compendiumSource:common}});
+ assert.equal(core.consumePlan(d,n.consume).ok,false,'5 needed, 4 owned');
+ done();
+});
+await test('items: consumePlan agrees with an exhaustive search on 3000 random small cases',()=>{
+ let seed=7;const rnd=n=>{seed|=0;seed=seed+0x6D2B79F5|0;let x=Math.imul(seed^seed>>>15,1|seed);x=x+Math.imul(x^x>>>7,61|x)^x;return (((x^x>>>14)>>>0)/4294967296*n)|0;};
+ const brute=(units,need)=>{need=[...need];const rec=k=>{if(k===units.length)return need.every(x=>x<=0);if(rec(k+1))return true;for(let j=0;j<need.length;j++)if(need[j]>0&&units[k][j]){need[j]--;const ok=rec(k+1);need[j]++;if(ok)return true;}return false;};return rec(0);};
+ let payable=0;
+ for(let c=0;c<3000;c++){
+  const items=[...Array(1+rnd(4))].map((_,i)=>({id:'i'+i,name:['Erva','Pedra'][rnd(2)],system:{quantity:rnd(3)+(rnd(3)?0:-1)},_stats:{compendiumSource:['u1','u2',undefined][rnd(3)]}}));
+  const list=[...Array(1+rnd(3))].map(()=>({name:['Erva','Pedra','Rara'][rnd(3)],uuid:rnd(2)?'':['u1','u2'][rnd(2)],qty:1+rnd(2)}));
+  const a={items};
+  const units=items.flatMap(i=>Array(core.itemQty(i)).fill(list.map(it=>core.itemMatches(i,it))));
+  const p=core.consumePlan(a,list),b=brute(units,list.map(core.itemNeed));if(b)payable++;
+  assert.equal(p.ok,b,JSON.stringify({items,list}));
+  if(p.ok){assert.equal([...p.take.values()].reduce((x,y)=>x+y,0),list.reduce((x,it)=>x+core.itemNeed(it),0),'takes exactly what is needed');
+   for(const i of items)assert((p.take.get(i.id)??0)<=core.itemQty(i),'never more than the stack');}
+ }
+ assert(payable>200,'enough payable cases were tried');
+});
 console.log(`TOTAL: ${count} passed`);
