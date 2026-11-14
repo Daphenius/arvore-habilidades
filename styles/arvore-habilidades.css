@@ -629,3 +629,8 @@
 .st-big-off,.st-big:disabled{background:var(--st-card) !important;color:var(--st-muted) !important;border:1px dashed var(--st-line) !important;cursor:not-allowed;opacity:1}
 .st-why{display:flex;gap:6px;align-items:flex-start;font-size:12px;color:var(--st-warn-text);margin:-2px 2px 4px;line-height:1.35}
 .st-why i{margin-top:2px}
+
+/* Modo de desempenho "Baixo" do Foundry ou "reduzir movimento" do sistema: sem animação contínua nem brilho nas linhas */
+body.st-leve .st-l-ready,body.st-leve .st-l-glow,body.st-leve .st-l-plan,body.st-leve .st-up{animation:none}
+body.st-leve .st-l-on{filter:none}
+@media (prefers-reduced-motion:reduce){.st-l-ready,.st-l-glow,.st-l-plan,.st-up{animation:none}}

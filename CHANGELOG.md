@@ -1,5 +1,12 @@
 # Histórico de versões — Árvore da Mesa
 
+## 1.12.0
+
+- Atualizado para o Foundry VTT 14.370 e o D&D 5e 6.1.0 (versões mais recentes).
+- **Modo de desempenho do Foundry:** com o modo de desempenho em "Baixo" (Configurações > Núcleo), ou com "reduzir movimento" ligado no sistema, as linhas e selos da árvore param de se mexer e perdem o brilho, que é o que mais pesa em árvores grandes.
+- **Desempenho:** a janela da árvore junta várias mudanças seguidas no mesmo personagem (dano, item, efeito) num só redesenho.
+- **Desempenho:** a checagem de habilidades temporárias que vencem não varre mais todos os atores e efeitos a cada mudança de hora (com o relógio em tempo real, isso acontecia a cada poucos segundos). Ela guarda só os efeitos com prazo e apaga os vencidos de um personagem num só pedido ao servidor.
+
 ## 1.11.2
 
 - **Ordem dos consumos não bloqueia mais uma compra válida:** com uma Erva comum e uma Erva rara na ficha, uma habilidade que pedia "uma Erva qualquer" + "a Erva rara" era recusada se a exigência genérica viesse primeiro na lista: ela pegava a rara, e depois faltava a rara. Agora o módulo procura uma divisão das unidades que pague todas as exigências (se ela existir, é encontrada), em qualquer ordem. Continua valendo que cada unidade paga uma exigência só e que nada é concedido sem pagar.

@@ -86,7 +86,9 @@ export class ArvoreHabilidades extends ApplicationV2 {
     if (game.user.isGM && !this.catalog) loadCatalog().then(c => { ST.catalog = c; this.catalog = c; if (this.rendered && this.edit) this.render(); });
     this.actorId = this.defaultActor()?.id ?? null;
 
-    const watch = d => { if (d?.id === this.actorId || d?.parent?.id === this.actorId) this.render(); };
+    // várias mudanças seguidas no mesmo personagem (dano, item, efeito) viram um só redesenho da árvore
+    const redesenhar = foundry.utils.debounce(() => { if (this.rendered) this.render(); }, 120);
+    const watch = d => { if (d?.id === this.actorId || d?.parent?.id === this.actorId) redesenhar(); };
     this._hooks = [
       ["updateActor", Hooks.on("updateActor", watch)],
       ["createItem", Hooks.on("createItem", watch)],

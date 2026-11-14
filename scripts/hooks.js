@@ -162,18 +162,41 @@ export async function onEffectDeleted(eff) {
   if (orig.length || st.seconds) chat(a, `<b>${esc(a.name)}</b>: <b>${esc(st.name ?? eff.name)}</b> terminou.`);
 }
 
-export async function checkExpiry() {
+// Efeitos com prazo (tempo ou rodada). O relógio em tempo real muda o tempo do mundo a cada poucos
+// segundos: em vez de varrer todos os atores e efeitos a cada mudança, guarda só os que têm prazo
+// e refaz essa lista quando algum efeito ou ator é criado, alterado ou apagado.
+let _prazos = null;
+export const esquecerPrazos = () => { _prazos = null; };
+function prazos() {
+  if (_prazos) return _prazos;
+  _prazos = [];
   for (const a of game.actors) {
     for (const e of a.effects) {
       if (!stFlag(e)?.generated) continue;
       const end = e.flags?.[SCOPE]?.stState?.end;
-      if (!end) continue;
-      const cb = end.combat ? game.combats.get(end.combat) : null;
-      const byRound = cb && end.round && cb.round >= end.round;
-      const byTime = end.time && game.time.worldTime >= end.time && !cb;
-      if (byRound || byTime) await e.delete();
+      if (end) _prazos.push({ actorId: a.id, effectId: e.id });
     }
   }
+  return _prazos;
+}
+let _expirando = false;
+export async function checkExpiry() {
+  const lista = prazos();
+  if (!lista.length || _expirando) return;
+  const porAtor = new Map();
+  for (const { actorId, effectId } of lista) {
+    const a = game.actors.get(actorId), e = a?.effects.get(effectId);
+    const end = e?.flags?.[SCOPE]?.stState?.end;
+    if (!end) continue;
+    const cb = end.combat ? game.combats.get(end.combat) : null;
+    const byRound = cb && end.round && cb.round >= end.round;
+    const byTime = end.time && game.time.worldTime >= end.time && !cb;
+    if (byRound || byTime) porAtor.set(a, [...(porAtor.get(a) ?? []), e.id]);
+  }
+  // um pedido ao servidor por ator, em vez de um por efeito
+  _expirando = true;
+  try { for (const [a, ids] of porAtor) await a.deleteEmbeddedDocuments("ActiveEffect", ids); }
+  finally { _expirando = false; }
 }
 // ───────────────────────── aviso de habilidade disponível ─────────────────────────
 // Chaves "árvore:habilidade:nível" do que o personagem pode comprar agora
@@ -261,8 +284,11 @@ export function installSessionHooks() {
     // depois de uma compra/reembolso só atualiza a lista, sem aviso (o jogador está vendo a árvore)
     queueAvailable(a, "skillTree" in fl || "skillRanks" in fl || "skillTraining" in fl);
   });
-  on("createActiveEffect", eff => { if (isActiveGM()) onEffectCreated(eff); });
-  on("deleteActiveEffect", eff => { if (isActiveGM()) onEffectDeleted(eff); });
+  on("createActiveEffect", eff => { esquecerPrazos(); if (isActiveGM()) onEffectCreated(eff); });
+  on("deleteActiveEffect", eff => { esquecerPrazos(); if (isActiveGM()) onEffectDeleted(eff); });
+  on("updateActiveEffect", esquecerPrazos);
+  on("createActor", esquecerPrazos);
+  on("deleteActor", esquecerPrazos);
   on("updateCombat", (c, ch) => { if (isActiveGM() && ("round" in ch || "turn" in ch)) checkExpiry(); });
   on("updateWorldTime", () => { if (isActiveGM()) checkExpiry(); });
   // Descanso longo pela ficha. O dnd5e só avisa no computador de quem descansou:

@@ -42,7 +42,18 @@ Hooks.once("setup", () => initCore());
 // Tidy 5e Sheets: registra a aba "Skill Tree" pela API dela
 Hooks.once("tidy5e-sheet.ready", api => registerTidyTab(api));
 
+// Modo de desempenho do Foundry (Configurações > Núcleo): no "Baixo", as linhas e selos da árvore
+// param de se mexer e perdem o brilho, que é o que mais pesa em árvores grandes.
+function modoLeve() {
+  let modo = null;
+  try { modo = game.settings.get("core", "performanceMode"); } catch { /* sem a configuração: segue normal */ }
+  modo ??= canvas?.performance?.mode;   // "automático": o modo que o Foundry escolheu para este computador
+  document.body.classList.toggle("st-leve", Number.isInteger(modo) && modo <= (CONST.CANVAS_PERFORMANCE_MODES?.LOW ?? 0));
+}
+Hooks.on("clientSettingChanged", key => { if (key === "core.performanceMode") modoLeve(); });
+
 Hooks.once("ready", async () => {
+  modoLeve();
   try { await migrateFromMacro(); } catch (e) { console.error(loc("ARVORE.Inicio.arvoreDaMesaMigracaoDaMacro"), e); }
   try { await migrateEffectKeys(); } catch (e) { console.error(loc("ARVORE.Inicio.arvoreDaMesaMigracaoDosEfeitos"), e); }
   try { await migrateRefundPlayer(); } catch (e) { console.error(loc("ARVORE.Inicio.arvoreDaMesaReembolsoPeloJogador"), e); }
